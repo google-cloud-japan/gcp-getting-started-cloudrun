@@ -9,8 +9,8 @@
 
 <walkthrough-watcher-constant key="region" value="asia-northeast1"></walkthrough-watcher-constant>
 <walkthrough-watcher-constant key="repo-name" value="cloudrun-handson"></walkthrough-watcher-constant>
-<walkthrough-watcher-constant key="github-repo" value="GoogleCloudPlatform/gcp-getting-started-lab-jp/master/cloudrun"></walkthrough-watcher-constant>
-<walkthrough-watcher-constant key="branch-name" value="master"></walkthrough-watcher-constant>
+<walkthrough-watcher-constant key="github-repo" value="google-cloud-japan/gcp-getting-started-cloudrun/main"></walkthrough-watcher-constant>
+<walkthrough-watcher-constant key="branch-name" value="main"></walkthrough-watcher-constant>
 
 ## **環境準備**
 
@@ -439,7 +439,7 @@ CI / CD 設定を含めたデプロイは GUI を利用して行います。
 1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
 1. リポジトリで `cloudrun-handson` を選択します
 1. `次へ` ボタンをクリックします
-1. ブランチで `^master$` を選択します
+1. ブランチで `^main$` を選択します
 1. Build Type で `Go、Node.js、Python、Java、または .NET Core` をチェックします
 1. ビルド コンテキストのディレクトリに `/cloudrun/src/sumservice` と入力します
 1. `保存` ボタンをクリックします
@@ -611,7 +611,7 @@ Cloud Run の GUI が開いていない方は、下記のボタンから Cloud R
 1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
 1. リポジトリで `cloudrun-handson` を選択します
 1. `次へ` ボタンをクリックします
-1. ブランチで `^master$` を選択します
+1. ブランチで `^main$` を選択します
 1. Build Type で `Go、Node.js、Python、Java、または .NET Core` をチェックします
 1. ビルド コンテキストのディレクトリに `/cloudrun/src/currencyservice` と入力します
 1. `保存` ボタンをクリックします
@@ -1152,5 +1152,5 @@ gcloud projects delete {{project-id}}
 ### **3. ハンズオン資材の削除**
 
 ```bash
-cd $HOME && rm -rf gcp-getting-started-lab-jp gopath
+cd $HOME && rm -rf gcp-getting-started-cloudrun gopath
 ```
