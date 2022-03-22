@@ -488,26 +488,6 @@ Cloud Run の GUI に表示されている URL のリンクをクリックし、
 
 <walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。以降は修正する場合、できる限りこのパイプラインを活用します。</walkthrough-footnote>
 
-## **チャレンジ問題：デプロイの手動化**
-
-先程設定した CI / CD 設定はコードがプッシュされると、新しいリビジョンがデプロイされそちらでアクセスを受けるようになります。
-
-本番の環境では、デプロイは問題がないか確認後、手動で行うことが多いと思います。
-
-先の手順で実施した「新リビジョンの限定公開」を参考に、今存在しているビルドトリガー設定を、新リビジョンをデプロイしたとしても、アクセスは割り振らず、自動で付与されたランダム URL でのみアクセスを受け付けるよう修正してみましょう。
-
-### **ヒント**
-
-- 自動で作成されている Cloud Build トリガーを修正します。Inline でビルドステップが書かれているので、見てみましょう。
-- TAG は自動で割り振られるランダム値を使ってみましょう。ここでは commit ID の短縮文字列を使ってみましょう。Cloud Build の設定内で使える環境変数名は[こちら](https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values)に記載されています。
-- Cloud Build の GUI は下記ボタンをクリックして開きます。
-
-<walkthrough-menu-navigation sectionId="CLOUD_BUILD_SECTION"></walkthrough-menu-navigation>
-
-### **できた方は**
-
-うまく設定できた方は以降のハンズオンで手間がかかってしまうため、トリガーを元の状態に戻しておきましょう。
-
 ## **サンプルアプリケーションの拡張**
 
 <walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
