@@ -652,7 +652,7 @@ sumservice に currencyservice と連携する API（sumcurrency）の API を�
 `src/sumservice/main.py` にコメントアウトされた状態で記載されているので、コメントを削除します。
 
 ```bash
-sed -i -e '31,71s/^#//g' src/sumservice/main.py
+sed -i -e '45,85s/^#//g' src/sumservice/main.py
 ```
 
 追加したコードは下記のコマンドで表示できます。
