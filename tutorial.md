@@ -700,47 +700,12 @@ curl -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AU
 <walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
 
 Cloud Run では様々なセキュリティを向上させる機能、プラクティスがあります。
-今回はそのうち下記の 3 つを実施します。
+今回はそのうち下記の 2 つを実施します。
 
-- Container Analysis と脆弱性スキャン
 - サービス個別の権限設定
 - sumservice + currencyservice のセキュアな連携
 
 [アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/security.png)
-
-## **Container Analysis と脆弱性スキャン**
-
-Container Registry と Artifact Registry では格納されているコンテナイメージに対して、脆弱性スキャンを行えます。
-
-ここまで Artifact Registry を使ってきたため、そちらで機能を試します。
-
-### **1. Artifact Registry GUI への移動**
-
-下記ボタンから Artifact Registry の画面に移動します。
-
-<walkthrough-menu-navigation sectionId="ARTIFACT_REGISTRY_SECTION"></walkthrough-menu-navigation>
-
-### **2. Container Analysis の有効化** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/enable_container_analysis.png)
-
-Container Analysis を有効化するにはプロジェクト単位で機能を有効化します。
-
-左メニューの `設定` をクリックし、次のページで脆弱性スキャンを `オン` にします。
-
-### **3. コンテナの再アップロード** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/click_cloudrun_handson.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/click_sumservice.png)
-
-左メニューの `リポジトリ` をクリック、次に `cloudrun-handson` 、`sumservice` の順にクリックし、コンテナイメージ一覧が見えるようにします。
-
-スキャンはコンテナイメージがプッシュされた段階で実行されます。そのためコンテナを再度プッシュします。
-
-```bash
-gcloud builds submit src/sumservice/ --pack image={{region}}-docker.pkg.dev/{{project-id}}/cloudrun-handson/sumservice:v2
-```
-
-### **4. スキャン結果の確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/container_analysis_result.png)
-
-脆弱性列の数字をクリックし、どのような脆弱性がコンテナイメージに残っているかを確認します。
-
-<walkthrough-footnote>コンテナの脆弱性スキャン機能を試しました。近年コンテナについてのセキュリティが注目されています。このような機能を使い、インターネットからダウンロードすることが多いコンテナについて重大な問題がないかを確認すると良いでしょう。</walkthrough-footnote>
 
 ## **サービス個別の権限設定**
 
