@@ -92,10 +92,10 @@ Cloud Run では様々な方法でデプロイが可能です。ここでは以�
 
 このアプリケーションは数字の合計値を返す機能を備えているので以降、`sumservice` と呼びます。
 
-### **Helloworld API**
+### **Hello Challenger API**
 
 - パス: /
-  - `Hello World!` という文字列を返します。
+  - `Hello Challenger01!` という文字列を返します。
 
 ### **数値合計 API**
 
@@ -205,7 +205,7 @@ curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}
 Dockerfile 無しでデプロイできることを確かめるために、Dockerfile を退避します。
 
 ```bash
-mv src/sumservice/Dockerfile /tmp/
+mv src/sumservice/Dockerfile ./
 ```
 
 **ヒント**: Buildpacks というソフトウェアを使い、Dockerfile 無しでのデプロイを実現しています。詳細は[こちら](https://cloud.google.com/blog/ja/products/containers-kubernetes/google-cloud-now-supports-buildpacks)を参照してください。
@@ -213,8 +213,12 @@ mv src/sumservice/Dockerfile /tmp/
 ### **2. 一括でデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 ```
+
+ソースからのデプロイでは初回にコンテナを保管するための Artifact Registry を作成するか質問されます。そのまま `Enter` を押し、先に進めてください。
+
+同じサービス名でのデプロイのため、新しいリビジョンが作成されます。
 
 ### **3. 動作確認**
 
@@ -237,7 +241,13 @@ curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}
 - コンテナレジストリの作成
 - コンテナをローカルで作成
 
-以降のデプロイでは、主に簡易なこの手順を利用します。
+### **4. Dockerfile を戻す**
+
+Dockerfile 無しでのコンテナ作成は、毎回内部でアプリケーションの分析が行われているため時間がかかってしまいます。先程退避しておいた Dockerfile を戻し以降のコンテナ作成の時間を短縮します。
+
+```bash
+mv Dockerfile src/sumservice/
+```
 
 <walkthrough-footnote>gcloud コマンドを使い、ソースコードから Cloud Run へのデプロイが 1 コマンドでできることを学びました。次に本番のユースケースに合わせた、Cloud Run でのより進んだデプロイ方法を学びます。</walkthrough-footnote>
 
@@ -261,21 +271,32 @@ Cloud Run ではリリースの構成、トラフィックのコントロール�
 
 [アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/canary_release.png)
 
-### **1. アプリケーションの修正**
+### **1. アプリケーションにアクセス**
+
+修正前にどのようなレスポンスが返ってくるかを確認します。
 
 ```bash
-sed -i -e "s/World/New World/" src/sumservice/main.py
+SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
+curl ${SUM_URL}/ && echo
 ```
 
-### **2. 新リビジョンのデプロイ**
+`Hello Challenger01!` と返ってくれば成功です。
+
+### **2. アプリケーションの修正**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
+sed -i -e "s/Challenger[0-9]*/Challenger09/" src/sumservice/main.py
+```
+
+### **3. 新リビジョンのデプロイ**
+
+```bash
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
 ```
 
 **ヒント**: 新リビジョンにトラフィックを流さないよう、`--no-traffic` のオプションをつけています。これがない場合、デプロイされた瞬間にすべてのトラフィックが新リビジョンに流れます。
 
-### **3. 新リビジョンに 10 %, 旧リビジョンに 90 % のアクセスを割り振り**
+### **4. 新リビジョンに 10 %, 旧リビジョンに 90 % のアクセスを割り振り**
 
 ```bash
 NEW_REV=$(gcloud run revisions list --format json | jq -r '.[].metadata.name' | grep 'sumservice-' | sort -r | sed -n 1p)
@@ -283,15 +304,15 @@ OLD_REV=$(gcloud run revisions list --format json | jq -r '.[].metadata.name' | 
 gcloud run services update-traffic sumservice --to-revisions=${NEW_REV}=10,${OLD_REV}=90
 ```
 
-ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれに `Hello New World!` と表示されます。
+ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれに `Hello Challenger09!` と表示されます。
 
-### **4. すべてのアクセスを新リビジョンに割り振り**
+### **5. すべてのアクセスを新リビジョンに割り振り**
 
 ```bash
 gcloud run services update-traffic sumservice --to-latest
 ```
 
-再度ブラウザからアクセスすると、何度アクセスしてもすべてのレスポンスが `Hello New World!` となっていることを確認します。
+再度ブラウザからアクセスすると、何度アクセスしてもすべてのレスポンスが `Hello Challenger09!` となっていることを確認します。
 
 <walkthrough-footnote>リビジョン、トラフィックをコントロールし、カナリアリリースを実現しました。次に、新リビジョンを特定の URL でのみデプロイする方法を学びます。</walkthrough-footnote>
 
@@ -304,21 +325,21 @@ gcloud run services update-traffic sumservice --to-latest
 ### **1. アプリケーションの修正**
 
 ```bash
-sed -i -e 's/New World/New Normal/' src/sumservice/main.py
+sed -i -e 's/Challenger[0-9]*/Challenger10/' src/sumservice/main.py
 ```
 
-**ヒント**: 前ページの更新で、すべてのアクセスに `New World` と返すようになっていました。
+**ヒント**: 前ページの更新で、すべてのアクセスに `Hello Challenger09!` と返すようになっていました。
 
 ### **2. タグを付けて、新リビジョンをデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic --tag abcdefg
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic --tag abcdefg
 ```
 
 ### **3. 新リビジョンへアクセス**
 
 ターミナルに出力されたタグ付き URL をクリックします。
-新リビジョンの `Hello New Normal!` が返ってくることを確認します。
+新リビジョンの `Challenger10` が返ってくることを確認します。
 
 今回デプロイしたリビジョンはこの URL でのみ稼働しています。そして、タグがない URL は旧バージョンが稼働しています。つまりこれを使うことで、事前に限定ユーザによるテストが可能です。
 
@@ -330,7 +351,7 @@ gcloud run services update-traffic sumservice --to-latest
 
 ### **5. サービスの削除**
 
-次にここまで実施してきた手続きを自動化する方法を学びます。そのため、現在稼働している手動でデプロイしたサービスを削除します。
+次にここまで実施してきた手続きを自動化 (GitOps) する方法を学びます。そのため、現在稼働しているサービスを削除します。
 
 ```bash
 gcloud run services delete sumservice --quiet
@@ -423,40 +444,35 @@ CI / CD 設定を含めたデプロイは GUI を利用して行います。
 
 <walkthrough-spotlight-pointer spotlightId="run-create-service">サービスの作成</walkthrough-spotlight-pointer> ボタンをクリックし作成を開始します。
 
-### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloud_run_service.png)
-
-1. サービス名に `sumservice` と入力します
-1. リージョンは `asia-northeast1 (Tokyo)` を選択します
-1. `次へ` ボタンをクリックします
-
-### **4. サービスの最初のリビジョンの構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_the_first_revision_of_the_service.png)
+### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloudrun_service.png)
 
 1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
+1. サービス名に `sumservice` と入力します
+1. リージョンは `asia-northeast1 (Tokyo)` を選択します
 1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
 
-### **5. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/move_to_trigger_configuration.png)
+### **4. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build.png)
 
 1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
 1. リポジトリで `cloudrun-handson` を選択します
 1. `次へ` ボタンをクリックします
-1. ブランチで `^main$` を選択します
-1. Build Type で `Go、Node.js、Python、Java、または .NET Core` をチェックします
-1. ビルド コンテキストのディレクトリに `/cloudrun/src/sumservice` と入力します
+1. ブランチで `^main$` が選択されていることを確認します
+1. Build Type で `Dockerfile` をチェックします
+1. ソースの場所に `/src/sumservice/Dockerfile` と入力します
 1. `保存` ボタンをクリックします
-1. `次へ` ボタンをクリックします
 
-### **6. このサービスをトリガーする方法の構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_trigger.png)
+### **5. サービスの作成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_service.png)
 
-1. 認証の項目で `未認証の呼び出しを許可` をチェックします
+1. 下部にスクロールし認証の項目で `未認証の呼び出しを許可` をチェックします
 1. `作成` ボタンをクリックします
 
-`リポジトリからのビルドとデプロイを実行しています` の処理が終わるまで待ちます。
+`継続的デプロイを設定しています` の処理が終わるまで待ちます。
 
 デプロイが完了するまでに数分時間がかかります。完了すると自動的に画面がリロードされます。
 
-### **7. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/access_deployed_service.png)
+### **6. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/access_deployed_service.png)
 
-GUI に表示されている URL のリンクをクリックし、`Hello New Normal!` と表示されていれば成功です。
+GUI に表示されている URL のリンクをクリックし、`Hello Challenger10!` と表示されていれば成功です。
 
 <walkthrough-footnote>これで Cloud Run と Git リポジトリを紐付けて、ソースコードの変更から Cloud Run へのデプロイを自動化することができました。次にこのパイプラインの動作を確認します。</walkthrough-footnote>
 
@@ -464,10 +480,10 @@ GUI に表示されている URL のリンクをクリックし、`Hello New Nor
 
 ### **1. アプリケーションの修正**
 
-`Hello New Normal!` と修正していたメッセージを `Hello World!` に戻します。
+`Hello Challenger10!` と修正していたメッセージを `Hello Challener01!` に戻します。
 
 ```bash
-sed -i -e 's/New Normal/World/' src/sumservice/main.py
+sed -i -e 's/Challener[0-9]*/Challenger01/' src/sumservice/main.py
 ```
 
 ### **2. リポジトリへのプッシュ**
@@ -482,31 +498,11 @@ Cloud Build の GUI から履歴を選び、ビルドの進行状況が確認で
 
 ### **3. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/confirm_cicd_pipeline.png)
 
-Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello World!` と表示されていれば成功です。
+Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello Challenger01!` と表示されていれば成功です。
 
 **ヒント**: GUI から新しいリビジョンがデプロイ完了したことを確認した後に、アクセスしてください。
 
 <walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。以降は修正する場合、できる限りこのパイプラインを活用します。</walkthrough-footnote>
-
-## **チャレンジ問題：デプロイの手動化**
-
-先程設定した CI / CD 設定はコードがプッシュされると、新しいリビジョンがデプロイされそちらでアクセスを受けるようになります。
-
-本番の環境では、デプロイは問題がないか確認後、手動で行うことが多いと思います。
-
-先の手順で実施した「新リビジョンの限定公開」を参考に、今存在しているビルドトリガー設定を、新リビジョンをデプロイしたとしても、アクセスは割り振らず、自動で付与されたランダム URL でのみアクセスを受け付けるよう修正してみましょう。
-
-### **ヒント**
-
-- 自動で作成されている Cloud Build トリガーを修正します。Inline でビルドステップが書かれているので、見てみましょう。
-- TAG は自動で割り振られるランダム値を使ってみましょう。ここでは commit ID の短縮文字列を使ってみましょう。Cloud Build の設定内で使える環境変数名は[こちら](https://cloud.google.com/build/docs/configuring-builds/substitute-variable-values)に記載されています。
-- Cloud Build の GUI は下記ボタンをクリックして開きます。
-
-<walkthrough-menu-navigation sectionId="CLOUD_BUILD_SECTION"></walkthrough-menu-navigation>
-
-### **できた方は**
-
-うまく設定できた方は以降のハンズオンで手間がかかってしまうため、トリガーを元の状態に戻しておきましょう。
 
 ## **サンプルアプリケーションの拡張**
 
@@ -576,14 +572,15 @@ Response:
 .
 └─ src
     └─ currencyservice
-        ├─ go.mod : モジュール定義ファイル
-        └─ main.go : メイン関数ソースファイル
+        ├─ Dockerfile # Docker コンテナ作成定義ファイル
+        ├─ go.mod     # モジュール定義ファイル
+        └─ main.go    # メイン関数ソースファイル
 ```
 
 ## **currencyservice のデプロイ**
 
 まず sumservice からアクセスを受け付ける、currencyservice をデプロイします。
-sumservice と同様に CI / CD 設定を含めたデプロイを GUI から行います。
+currencyservice は GitOps ではなく、CLI から操作を行います。
 
 ### **1. Cloud Run GUI に移動**
 
@@ -591,42 +588,13 @@ Cloud Run の GUI が開いていない方は、下記のボタンから Cloud R
 
 <walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
 
-### **2. サービスの作成を開始**
+### **2. CLI による currencyservice のデプロイ**
 
-<walkthrough-spotlight-pointer spotlightId="run-create-service">サービスの作成</walkthrough-spotlight-pointer> ボタンをクリックし作成を開始します。
+```bash
+gcloud run deploy currencyservice --source src/currencyservice/ --allow-unauthenticated
+```
 
-### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloud_run_service_currency.png)
-
-1. サービス名に `currencyservice` と入力します
-1. リージョンは `asia-northeast1 (Tokyo)` を選択します
-1. `次へ` ボタンをクリックします
-
-### **4. サービスの最初のリビジョンの構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_the_first_revision_of_the_service.png)
-
-1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
-1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
-
-### **5. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build_currency.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/move_to_trigger_configuration.png)
-
-1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
-1. リポジトリで `cloudrun-handson` を選択します
-1. `次へ` ボタンをクリックします
-1. ブランチで `^main$` を選択します
-1. Build Type で `Go、Node.js、Python、Java、または .NET Core` をチェックします
-1. ビルド コンテキストのディレクトリに `/cloudrun/src/currencyservice` と入力します
-1. `保存` ボタンをクリックします
-1. `次へ` ボタンをクリックします
-
-### **6. このサービスをトリガーする方法の構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_trigger.png)
-
-1. 認証の項目で `未認証の呼び出しを許可` をチェックします
-1. `作成` ボタンをクリックします
-
-`リポジトリからのビルドとデプロイを実行しています` の処理が終わるまで待ちます。
-
-デプロイが完了するまでに数分時間がかかります。完了すると自動的に画面がリロードされます。
-
-### **7. 動作確認**
+### **3. 動作確認**
 
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
@@ -651,13 +619,13 @@ sumservice に currencyservice と連携する API（sumcurrency）の API を�
 `src/sumservice/main.py` にコメントアウトされた状態で記載されているので、コメントを削除します。
 
 ```bash
-sed -i -e '31,71s/^#//g' src/sumservice/main.py
+sed -i -e '45,85s/^#//g' src/sumservice/main.py
 ```
 
 追加したコードは下記のコマンドで表示できます。
 
 ```bash
-sed -n 31,71p src/sumservice/main.py
+sed -n 45,85p src/sumservice/main.py
 ```
 
 ### **2. デプロイ**
@@ -699,47 +667,12 @@ curl -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AU
 <walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
 
 Cloud Run では様々なセキュリティを向上させる機能、プラクティスがあります。
-今回はそのうち下記の 3 つを実施します。
+今回はそのうち下記の 2 つを実施します。
 
-- Container Analysis と脆弱性スキャン
 - サービス個別の権限設定
 - sumservice + currencyservice のセキュアな連携
 
 [アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/security.png)
-
-## **Container Analysis と脆弱性スキャン**
-
-Container Registry と Artifact Registry では格納されているコンテナイメージに対して、脆弱性スキャンを行えます。
-
-ここまで Artifact Registry を使ってきたため、そちらで機能を試します。
-
-### **1. Artifact Registry GUI への移動**
-
-下記ボタンから Artifact Registry の画面に移動します。
-
-<walkthrough-menu-navigation sectionId="ARTIFACT_REGISTRY_SECTION"></walkthrough-menu-navigation>
-
-### **2. Container Analysis の有効化** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/enable_container_analysis.png)
-
-Container Analysis を有効化するにはプロジェクト単位で機能を有効化します。
-
-左メニューの `設定` をクリックし、次のページで脆弱性スキャンを `オン` にします。
-
-### **3. コンテナの再アップロード** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/click_cloudrun_handson.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/click_sumservice.png)
-
-左メニューの `リポジトリ` をクリック、次に `cloudrun-handson` 、`sumservice` の順にクリックし、コンテナイメージ一覧が見えるようにします。
-
-スキャンはコンテナイメージがプッシュされた段階で実行されます。そのためコンテナを再度プッシュします。
-
-```bash
-gcloud builds submit src/sumservice/ --pack image={{region}}-docker.pkg.dev/{{project-id}}/cloudrun-handson/sumservice:v2
-```
-
-### **4. スキャン結果の確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/container_analysis_result.png)
-
-脆弱性列の数字をクリックし、どのような脆弱性がコンテナイメージに残っているかを確認します。
-
-<walkthrough-footnote>コンテナの脆弱性スキャン機能を試しました。近年コンテナについてのセキュリティが注目されています。このような機能を使い、インターネットからダウンロードすることが多いコンテナについて重大な問題がないかを確認すると良いでしょう。</walkthrough-footnote>
 
 ## **サービス個別の権限設定**
 
@@ -792,7 +725,7 @@ gcloud run services add-iam-policy-binding currencyservice --member='serviceAcco
 sumservice のソースコードを修正し、currencyservice を呼び出すときにトークンを取得し、それを利用するように修正します。
 
 ```bash
-sed -i -e '44s/#//' src/sumservice/main.py
+sed -i -e '58s/#//' src/sumservice/main.py
 ```
 
 修正した内容をデプロイします。
@@ -994,7 +927,7 @@ bash scripts/setup_loadbalancer.sh
 ### **1. currencyservice のデプロイ**
 
 ```bash
-gcloud beta run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@{{project-id}}.iam.gserviceaccount.com
+gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@{{project-id}}.iam.gserviceaccount.com
 ```
 
 ### **2. sumservice からのアクセス許可設定**
@@ -1006,7 +939,7 @@ gcloud run services add-iam-policy-binding currencyservice --member='serviceAcco
 ### **3. sumservice のデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@{{project-id}}.iam.gserviceaccount.com
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@{{project-id}}.iam.gserviceaccount.com
 ```
 
 ### **4. sumservice へ currencyservice の URL を設定**
