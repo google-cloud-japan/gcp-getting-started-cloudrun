@@ -216,6 +216,10 @@ mv src/sumservice/Dockerfile ./
 gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 ```
 
+ソースからのデプロイでは初回にコンテナを保管するための Artifact Registry を作成するか質問されます。そのまま `Enter` を押し、先に進めてください。
+
+同じサービス名でのデプロイのため、新しいリビジョンが作成されます。
+
 ### **3. 動作確認**
 
 ```bash
@@ -241,7 +245,7 @@ curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}
 
 Dockerfile 無しでのコンテナ作成は、毎回内部でアプリケーションの分析が行われているため時間がかかってしまいます。先程退避しておいた Dockerfile を戻し以降のコンテナ作成の時間を短縮します。
 
-```shell
+```bash
 mv Dockerfile src/sumservice/
 ```
 
@@ -273,7 +277,7 @@ Cloud Run ではリリースの構成、トラフィックのコントロール�
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
-curl ${SUM_URL}/
+curl ${SUM_URL}/ && echo
 ```
 
 `Hello Challenger01!` と返ってくれば成功です。
@@ -347,7 +351,7 @@ gcloud run services update-traffic sumservice --to-latest
 
 ### **5. サービスの削除**
 
-次にここまで実施してきた手続きを自動化する方法を学びます。そのため、現在稼働している手動でデプロイしたサービスを削除します。
+次にここまで実施してきた手続きを自動化 (GitOps) する方法を学びます。そのため、現在稼働しているサービスを削除します。
 
 ```bash
 gcloud run services delete sumservice --quiet
@@ -440,38 +444,33 @@ CI / CD 設定を含めたデプロイは GUI を利用して行います。
 
 <walkthrough-spotlight-pointer spotlightId="run-create-service">サービスの作成</walkthrough-spotlight-pointer> ボタンをクリックし作成を開始します。
 
-### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloud_run_service.png)
-
-1. サービス名に `sumservice` と入力します
-1. リージョンは `asia-northeast1 (Tokyo)` を選択します
-1. `次へ` ボタンをクリックします
-
-### **4. サービスの最初のリビジョンの構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_the_first_revision_of_the_service.png)
+### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloudrun_service.png)
 
 1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
+1. サービス名に `sumservice` と入力します
+1. リージョンは `asia-northeast1 (Tokyo)` を選択します
 1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
 
-### **5. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/move_to_trigger_configuration.png)
+### **4. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build.png)
 
 1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
 1. リポジトリで `cloudrun-handson` を選択します
 1. `次へ` ボタンをクリックします
-1. ブランチで `^main$` を選択します
-1. Build Type で `Go、Node.js、Python、Java、または .NET Core` をチェックします
-1. ビルド コンテキストのディレクトリに `/cloudrun/src/sumservice` と入力します
+1. ブランチで `^main$` が選択されていることを確認します
+1. Build Type で `Dockerfile` をチェックします
+1. ソースの場所に `/src/sumservice/Dockerfile` と入力します
 1. `保存` ボタンをクリックします
-1. `次へ` ボタンをクリックします
 
-### **6. このサービスをトリガーする方法の構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_trigger.png)
+### **5. サービスの作成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_service.png)
 
-1. 認証の項目で `未認証の呼び出しを許可` をチェックします
+1. 下部にスクロールし認証の項目で `未認証の呼び出しを許可` をチェックします
 1. `作成` ボタンをクリックします
 
-`リポジトリからのビルドとデプロイを実行しています` の処理が終わるまで待ちます。
+`継続的デプロイを設定しています` の処理が終わるまで待ちます。
 
 デプロイが完了するまでに数分時間がかかります。完了すると自動的に画面がリロードされます。
 
-### **7. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/access_deployed_service.png)
+### **6. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/access_deployed_service.png)
 
 GUI に表示されている URL のリンクをクリックし、`Hello Challenger10!` と表示されていれば成功です。
 
@@ -581,7 +580,7 @@ Response:
 ## **currencyservice のデプロイ**
 
 まず sumservice からアクセスを受け付ける、currencyservice をデプロイします。
-sumservice と同様に CI / CD 設定を含めたデプロイを GUI から行います。
+currencyservice は GitOps ではなく、CLI から操作を行います。
 
 ### **1. Cloud Run GUI に移動**
 
@@ -589,42 +588,13 @@ Cloud Run の GUI が開いていない方は、下記のボタンから Cloud R
 
 <walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
 
-### **2. サービスの作成を開始**
+### **2. CLI による currencyservice のデプロイ**
 
-<walkthrough-spotlight-pointer spotlightId="run-create-service">サービスの作成</walkthrough-spotlight-pointer> ボタンをクリックし作成を開始します。
+```bash
+gcloud run deploy currencyservice --source src/currencyservice/ --allow-unauthenticated
+```
 
-### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloud_run_service_currency.png)
-
-1. サービス名に `currencyservice` と入力します
-1. リージョンは `asia-northeast1 (Tokyo)` を選択します
-1. `次へ` ボタンをクリックします
-
-### **4. サービスの最初のリビジョンの構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_the_first_revision_of_the_service.png)
-
-1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
-1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
-
-### **5. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build_currency.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/move_to_trigger_configuration.png)
-
-1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
-1. リポジトリで `cloudrun-handson` を選択します
-1. `次へ` ボタンをクリックします
-1. ブランチで `^main$` を選択します
-1. Build Type で `Go、Node.js、Python、Java、または .NET Core` をチェックします
-1. ビルド コンテキストのディレクトリに `/cloudrun/src/currencyservice` と入力します
-1. `保存` ボタンをクリックします
-1. `次へ` ボタンをクリックします
-
-### **6. このサービスをトリガーする方法の構成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_trigger.png)
-
-1. 認証の項目で `未認証の呼び出しを許可` をチェックします
-1. `作成` ボタンをクリックします
-
-`リポジトリからのビルドとデプロイを実行しています` の処理が終わるまで待ちます。
-
-デプロイが完了するまでに数分時間がかかります。完了すると自動的に画面がリロードされます。
-
-### **7. 動作確認**
+### **3. 動作確認**
 
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
@@ -655,7 +625,7 @@ sed -i -e '45,85s/^#//g' src/sumservice/main.py
 追加したコードは下記のコマンドで表示できます。
 
 ```bash
-sed -n 31,71p src/sumservice/main.py
+sed -n 45,85p src/sumservice/main.py
 ```
 
 ### **2. デプロイ**
