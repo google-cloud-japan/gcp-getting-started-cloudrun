@@ -205,7 +205,7 @@ curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}
 Dockerfile 無しでデプロイできることを確かめるために、Dockerfile を退避します。
 
 ```bash
-mv src/sumservice/Dockerfile /tmp/
+mv src/sumservice/Dockerfile ./
 ```
 
 **ヒント**: Buildpacks というソフトウェアを使い、Dockerfile 無しでのデプロイを実現しています。詳細は[こちら](https://cloud.google.com/blog/ja/products/containers-kubernetes/google-cloud-now-supports-buildpacks)を参照してください。
@@ -237,7 +237,13 @@ curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}
 - コンテナレジストリの作成
 - コンテナをローカルで作成
 
-以降のデプロイでは、主に簡易なこの手順を利用します。
+### **4. Dockerfile を戻す**
+
+Dockerfile 無しでのコンテナ作成は、毎回内部でアプリケーションの分析が行われているため時間がかかってしまいます。先程退避しておいた Dockerfile を戻し以降のコンテナ作成の時間を短縮します。
+
+```shell
+mv Dockerfile src/sumservice/
+```
 
 <walkthrough-footnote>gcloud コマンドを使い、ソースコードから Cloud Run へのデプロイが 1 コマンドでできることを学びました。次に本番のユースケースに合わせた、Cloud Run でのより進んだデプロイ方法を学びます。</walkthrough-footnote>
 
