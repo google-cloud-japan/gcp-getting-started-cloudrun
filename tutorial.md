@@ -92,10 +92,10 @@ Cloud Run では様々な方法でデプロイが可能です。ここでは以�
 
 このアプリケーションは数字の合計値を返す機能を備えているので以降、`sumservice` と呼びます。
 
-### **Helloworld API**
+### **Hello Challenger API**
 
 - パス: /
-  - `Hello World!` という文字列を返します。
+  - `Hello Challenger01!` という文字列を返します。
 
 ### **数値合計 API**
 
@@ -267,13 +267,24 @@ Cloud Run ではリリースの構成、トラフィックのコントロール�
 
 [アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/canary_release.png)
 
-### **1. アプリケーションの修正**
+### **1. アプリケーションにアクセス**
+
+修正前にどのようなレスポンスが返ってくるかを確認します。
 
 ```bash
-sed -i -e "s/World/New World/" src/sumservice/main.py
+SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
+curl ${SUM_URL}/
 ```
 
-### **2. 新リビジョンのデプロイ**
+`Hello Challenger01!` と返ってくれば成功です。
+
+### **2. アプリケーションの修正**
+
+```bash
+sed -i -e "s/Challenger[0-9]*/Challenger09/" src/sumservice/main.py
+```
+
+### **3. 新リビジョンのデプロイ**
 
 ```bash
 gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
@@ -281,7 +292,7 @@ gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticat
 
 **ヒント**: 新リビジョンにトラフィックを流さないよう、`--no-traffic` のオプションをつけています。これがない場合、デプロイされた瞬間にすべてのトラフィックが新リビジョンに流れます。
 
-### **3. 新リビジョンに 10 %, 旧リビジョンに 90 % のアクセスを割り振り**
+### **4. 新リビジョンに 10 %, 旧リビジョンに 90 % のアクセスを割り振り**
 
 ```bash
 NEW_REV=$(gcloud run revisions list --format json | jq -r '.[].metadata.name' | grep 'sumservice-' | sort -r | sed -n 1p)
@@ -289,15 +300,15 @@ OLD_REV=$(gcloud run revisions list --format json | jq -r '.[].metadata.name' | 
 gcloud run services update-traffic sumservice --to-revisions=${NEW_REV}=10,${OLD_REV}=90
 ```
 
-ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれに `Hello New World!` と表示されます。
+ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれに `Hello Challenger09!` と表示されます。
 
-### **4. すべてのアクセスを新リビジョンに割り振り**
+### **5. すべてのアクセスを新リビジョンに割り振り**
 
 ```bash
 gcloud run services update-traffic sumservice --to-latest
 ```
 
-再度ブラウザからアクセスすると、何度アクセスしてもすべてのレスポンスが `Hello New World!` となっていることを確認します。
+再度ブラウザからアクセスすると、何度アクセスしてもすべてのレスポンスが `Hello Challenger09!` となっていることを確認します。
 
 <walkthrough-footnote>リビジョン、トラフィックをコントロールし、カナリアリリースを実現しました。次に、新リビジョンを特定の URL でのみデプロイする方法を学びます。</walkthrough-footnote>
 
@@ -310,10 +321,10 @@ gcloud run services update-traffic sumservice --to-latest
 ### **1. アプリケーションの修正**
 
 ```bash
-sed -i -e 's/New World/New Normal/' src/sumservice/main.py
+sed -i -e 's/Challenger[0-9]*/Challenger10/' src/sumservice/main.py
 ```
 
-**ヒント**: 前ページの更新で、すべてのアクセスに `New World` と返すようになっていました。
+**ヒント**: 前ページの更新で、すべてのアクセスに `Hello Challenger09!` と返すようになっていました。
 
 ### **2. タグを付けて、新リビジョンをデプロイ**
 
@@ -324,7 +335,7 @@ gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticat
 ### **3. 新リビジョンへアクセス**
 
 ターミナルに出力されたタグ付き URL をクリックします。
-新リビジョンの `Hello New Normal!` が返ってくることを確認します。
+新リビジョンの `Challenger10` が返ってくることを確認します。
 
 今回デプロイしたリビジョンはこの URL でのみ稼働しています。そして、タグがない URL は旧バージョンが稼働しています。つまりこれを使うことで、事前に限定ユーザによるテストが可能です。
 
@@ -462,7 +473,7 @@ CI / CD 設定を含めたデプロイは GUI を利用して行います。
 
 ### **7. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/access_deployed_service.png)
 
-GUI に表示されている URL のリンクをクリックし、`Hello New Normal!` と表示されていれば成功です。
+GUI に表示されている URL のリンクをクリックし、`Hello Challenger10!` と表示されていれば成功です。
 
 <walkthrough-footnote>これで Cloud Run と Git リポジトリを紐付けて、ソースコードの変更から Cloud Run へのデプロイを自動化することができました。次にこのパイプラインの動作を確認します。</walkthrough-footnote>
 
@@ -470,10 +481,10 @@ GUI に表示されている URL のリンクをクリックし、`Hello New Nor
 
 ### **1. アプリケーションの修正**
 
-`Hello New Normal!` と修正していたメッセージを `Hello World!` に戻します。
+`Hello Challenger10!` と修正していたメッセージを `Hello Challener01!` に戻します。
 
 ```bash
-sed -i -e 's/New Normal/World/' src/sumservice/main.py
+sed -i -e 's/Challener[0-9]*/Challenger01/' src/sumservice/main.py
 ```
 
 ### **2. リポジトリへのプッシュ**
@@ -488,7 +499,7 @@ Cloud Build の GUI から履歴を選び、ビルドの進行状況が確認で
 
 ### **3. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/confirm_cicd_pipeline.png)
 
-Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello World!` と表示されていれば成功です。
+Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello Challenger01!` と表示されていれば成功です。
 
 **ヒント**: GUI から新しいリビジョンがデプロイ完了したことを確認した後に、アクセスしてください。
 
