@@ -483,7 +483,7 @@ GUI に表示されている URL のリンクをクリックし、`Hello Challen
 `Hello Challenger10!` と修正していたメッセージを `Hello Challener01!` に戻します。
 
 ```bash
-sed -i -e 's/Challener[0-9]*/Challenger01/' src/sumservice/main.py
+sed -i -e 's/Challenger[0-9]*/Challenger01/' src/sumservice/main.py
 ```
 
 ### **2. リポジトリへのプッシュ**
@@ -636,6 +636,8 @@ sed -n 45,85p src/sumservice/main.py
 git add . && git commit -m "Add integration to currencyservice" && git push google {{branch-name}}
 ```
 
+Cloud Build による更新内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日がたった今になったことを確認します。
+
 ### **3. 環境変数の設定**
 
 sumservice に currencyservice の URL を環境変数を通じて設定します。
@@ -734,6 +736,8 @@ sed -i -e '58s/#//' src/sumservice/main.py
 git add . && git commit -m "Update to use a token accessing currencyservice" && git push google {{branch-name}}
 ```
 
+Cloud Build による修正内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日がたった今になったことを確認します。
+
 ### **3. currencyservice の全利用者呼び出し許可設定削除**
 
 最後に currencyservice の呼び出し許可設定を変更し、権限を持っているアカウントのみ呼び出せるようにします。
@@ -780,7 +784,7 @@ Cloud Run では、負荷に応じて自動的にスケールします。
 
 負荷を掛けるツールとして [Locust](https://github.com/locustio/locust) を利用します。これは Python で書かれたオープンソースのツールで、独自の UI を持っている、また分散構成で負荷を掛けることができるなどの特長があります。
 
-ここでは Locust を GKE Autopilot 上に導入します。
+ここでは Locust を [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview) 上に導入します。
 
 ### **1. Autopilot クラスタの作成**
 
@@ -813,11 +817,13 @@ SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status
 helm install locust deliveryhero/locust --set loadtest.locust_locustfile_configmap=loadtest-sumservice-locustfile --set loadtest.name=loadtest-sumservice --set worker.replicas=2 --set loadtest.locust_host=${SUM_URL}
 ```
 
-次のコマンドを実行し、Pod が稼働状態（Running）になるまで待ちます。すべてが稼働状態になったら、Ctrl+C で抜けます。
+次のコマンドを実行し、Pod が稼働状態（Running）になるまで待ちます。すべての Pod で STATUS が `Running` 、READY が `1/1` になったら、Ctrl+C で抜けます。
 
 ```bash
-kubectl get pods -w
+watch -n 5 kubectl get pods
 ```
+
+3 分程度時間がかかります。
 
 ### **3. Web UI の確認**
 
@@ -861,7 +867,7 @@ Cloud Run では、パフォーマンスをチューニングするための様�
 - [CPU の割り当て](https://cloud.google.com/run/docs/configuring/cpu)
 - [最大同時実行の設定](https://cloud.google.com/run/docs/configuring/concurrency)
 
-**完了後、Locust からの負荷テストは止めましょう。Locust UI のメニュー内の STOP ボタンをクリックします。**
+**完了後、Locust からの負荷テストは止めましょう。Locust UI のメニュー内の STOP ボタンをクリックします。またターミナルでは port-forward を Ctrl-C で終了します。**
 
 <walkthrough-footnote>負荷ツールを利用し、Cloud Run に負荷をかけ、UI から挙動を確認しました。次に展開しているマイクロサービスをグローバルに展開する方法を学びます。</walkthrough-footnote>
 
@@ -912,7 +918,7 @@ bash scripts/create_self-cert.sh
 
 ### **2. HTTPS ロードバランサの作成**
 
-先程作成した証明書などのファイルも使い、ロードバランサを作成します。
+先程作成した証明書などのファイルを使い、ロードバランサを作成します。
 
 ```bash
 bash scripts/setup_loadbalancer.sh
@@ -929,6 +935,8 @@ bash scripts/setup_loadbalancer.sh
 ```bash
 gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@{{project-id}}.iam.gserviceaccount.com
 ```
+
+us-central1 リージョンでソースからの初めてのデプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
 
 ### **2. sumservice からのアクセス許可設定**
 
