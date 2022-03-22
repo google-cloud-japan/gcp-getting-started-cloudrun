@@ -213,7 +213,7 @@ mv src/sumservice/Dockerfile ./
 ### **2. 一括でデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 ```
 
 ### **3. 動作確認**
@@ -287,7 +287,7 @@ sed -i -e "s/Challenger[0-9]*/Challenger09/" src/sumservice/main.py
 ### **3. 新リビジョンのデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
 ```
 
 **ヒント**: 新リビジョンにトラフィックを流さないよう、`--no-traffic` のオプションをつけています。これがない場合、デプロイされた瞬間にすべてのトラフィックが新リビジョンに流れます。
@@ -329,7 +329,7 @@ sed -i -e 's/Challenger[0-9]*/Challenger10/' src/sumservice/main.py
 ### **2. タグを付けて、新リビジョンをデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic --tag abcdefg
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic --tag abcdefg
 ```
 
 ### **3. 新リビジョンへアクセス**
@@ -957,7 +957,7 @@ bash scripts/setup_loadbalancer.sh
 ### **1. currencyservice のデプロイ**
 
 ```bash
-gcloud beta run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@{{project-id}}.iam.gserviceaccount.com
+gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@{{project-id}}.iam.gserviceaccount.com
 ```
 
 ### **2. sumservice からのアクセス許可設定**
@@ -969,7 +969,7 @@ gcloud run services add-iam-policy-binding currencyservice --member='serviceAcco
 ### **3. sumservice のデプロイ**
 
 ```bash
-gcloud beta run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@{{project-id}}.iam.gserviceaccount.com
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@{{project-id}}.iam.gserviceaccount.com
 ```
 
 ### **4. sumservice へ currencyservice の URL を設定**
