@@ -738,7 +738,7 @@ gcloud run services add-iam-policy-binding currencyservice --member='serviceAcco
 sumservice のソースコードを修正し、currencyservice を呼び出すときにトークンを取得し、それを利用するように修正します。
 
 ```bash
-sed -i -e '44s/#//' src/sumservice/main.py
+sed -i -e '58s/#//' src/sumservice/main.py
 ```
 
 修正した内容をデプロイします。
