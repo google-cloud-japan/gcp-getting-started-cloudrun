@@ -576,8 +576,9 @@ Response:
 .
 └─ src
     └─ currencyservice
-        ├─ go.mod : モジュール定義ファイル
-        └─ main.go : メイン関数ソースファイル
+        ├─ Dockerfile # Docker コンテナ作成定義ファイル
+        ├─ go.mod     # モジュール定義ファイル
+        └─ main.go    # メイン関数ソースファイル
 ```
 
 ## **currencyservice のデプロイ**
