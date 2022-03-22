@@ -25,3 +25,4 @@ RUN apk add --no-cache ca-certificates
 COPY --from=builder /workspace/currencyservice ./
 EXPOSE 8080
 ENTRYPOINT ["/currencyservice"]
+
