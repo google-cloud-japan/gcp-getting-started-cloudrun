@@ -141,7 +141,7 @@ Response:
 
 ### **準備**
 
-また下記のボタンから Cloud Run の GUI を開いておきましょう。
+下記のボタンから Cloud Run の GUI を開いておきましょう。
 
 <walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
 
@@ -183,7 +183,7 @@ gcloud run deploy sumservice --image={{region}}-docker.pkg.dev/{{project-id}}/{{
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum | jq
 ```
 
 次のように返ってくれば、正しくアプリケーションが動作しています。
@@ -218,13 +218,13 @@ gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 
 ソースからのデプロイでは初回にコンテナを保管するための Artifact Registry を作成するか質問されます。そのまま `Enter` を押し、先に進めてください。
 
-同じサービス名でのデプロイのため、新しいリビジョンが作成されます。
+同じサービス名でのデプロイのため、**新しいリビジョン**が作成されます。
 
 ### **3. 動作確認**
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum | jq
 ```
 
 先程と同様に、次のように返ってくることを確認します。
@@ -288,6 +288,8 @@ curl ${SUM_URL}/ && echo
 sed -i -e "s/Challenger[0-9]*/Challenger09/" src/sumservice/main.py
 ```
 
+`Hello Challenger09!` とレスポンスを返すように修正を行いました。
+
 ### **3. 新リビジョンのデプロイ**
 
 ```bash
@@ -304,7 +306,7 @@ OLD_REV=$(gcloud run revisions list --format json | jq -r '.[].metadata.name' | 
 gcloud run services update-traffic sumservice --to-revisions=${NEW_REV}=10,${OLD_REV}=90
 ```
 
-ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれに `Hello Challenger09!` と表示されます。
+ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれ (10 回に 1 回) に `Hello Challenger09!` と表示されます。
 
 ### **5. すべてのアクセスを新リビジョンに割り振り**
 
@@ -328,7 +330,7 @@ gcloud run services update-traffic sumservice --to-latest
 sed -i -e 's/Challenger[0-9]*/Challenger10/' src/sumservice/main.py
 ```
 
-**ヒント**: 前ページの更新で、すべてのアクセスに `Hello Challenger09!` と返すようになっていました。
+**ヒント**: 前ページの更新で、すべてのアクセスに `Hello Challenger09!` と返すようになっていました。ここでは `Hello Challenger10!` と返すように修正します。
 
 ### **2. タグを付けて、新リビジョンをデプロイ**
 
@@ -338,7 +340,7 @@ gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --
 
 ### **3. 新リビジョンへアクセス**
 
-ターミナルに出力されたタグ付き URL をクリックします。
+ターミナルに出力された**タグ付き URL** をクリックします。
 新リビジョンの `Challenger10` が返ってくることを確認します。
 
 今回デプロイしたリビジョンはこの URL でのみ稼働しています。そして、タグがない URL は旧バージョンが稼働しています。つまりこれを使うことで、事前に限定ユーザによるテストが可能です。
@@ -351,7 +353,7 @@ gcloud run services update-traffic sumservice --to-latest
 
 ### **5. サービスの削除**
 
-次にここまで実施してきた手続きを自動化 (GitOps) する方法を学びます。そのため、現在稼働しているサービスを削除します。
+ソースコードの修正、デプロイを手動で行ってきました。次にこれらの手順を自動化する方法を学びます。そのため、現在稼働しているサービスを削除します。
 
 ```bash
 gcloud run services delete sumservice --quiet
@@ -430,9 +432,9 @@ git add . && git commit -m "Fix a message for sumservice" && git push google {{b
 
 <walkthrough-footnote>Cloud Shell 上にある資材を CSR のリポジトリにプッシュしました。次にこのリポジトリを参照先として、Cloud Run をデプロイします。</walkthrough-footnote>
 
-## **Cloud Run の CI / CD 設定を合わせたデプロイ**
+## **Cloud Run の CI / CD 設定**
 
-CI / CD 設定を含めたデプロイは GUI を利用して行います。
+Cloud Run の CI / CD 設定は GUI から行います。
 
 ### **1. Cloud Run GUI に移動**
 
@@ -448,7 +450,7 @@ CI / CD 設定を含めたデプロイは GUI を利用して行います。
 
 1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
 1. サービス名に `sumservice` と入力します
-1. リージョンは `asia-northeast1 (Tokyo)` を選択します
+1. リージョンは `asia-northeast1 (東京)` を選択します
 1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
 
 ### **4. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build.png)
@@ -492,17 +494,21 @@ sed -i -e 's/Challenger[0-9]*/Challenger01/' src/sumservice/main.py
 git add . && git commit -m "Update the message to test CI/CD deployment" && git push google {{branch-name}}
 ```
 
-Cloud Build の GUI から履歴を選び、ビルドの進行状況が確認できます。
+### **3. ビルド状況の確認**
+
+Cloud Build の GUI から履歴を選び、ビルドの進行状況が確認できます。ビルドが走っていることを確認し、完了まで待ちます。
 
 <walkthrough-menu-navigation sectionId="CLOUD_BUILD_SECTION"></walkthrough-menu-navigation>
 
-### **3. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/confirm_cicd_pipeline.png)
+### **4. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/confirm_cicd_pipeline.png)
+
+<walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
 
 Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello Challenger01!` と表示されていれば成功です。
 
 **ヒント**: GUI から新しいリビジョンがデプロイ完了したことを確認した後に、アクセスしてください。
 
-<walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。以降は修正する場合、できる限りこのパイプラインを活用します。</walkthrough-footnote>
+<walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。以降は sumservice を修正する場合、できる限りこのパイプラインを活用します。</walkthrough-footnote>
 
 ## **サンプルアプリケーションの拡張**
 
@@ -510,7 +516,7 @@ Cloud Run の GUI に表示されている URL のリンクをクリックし、
 
 サンプルアプリケーションは与えられた数字を足し算するだけの簡単なものでした。これに新しい機能を追加します。
 
-それは通貨情報も含めて足し算をし、結果を日本円に換算して返す機能です。
+その機能は通貨情報も含めて足し算をし、結果を日本円に換算して返す機能です。
 
 [アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/enhance_sample_application.png)
 
@@ -580,7 +586,7 @@ Response:
 ## **currencyservice のデプロイ**
 
 まず sumservice からアクセスを受け付ける、currencyservice をデプロイします。
-currencyservice は GitOps ではなく、CLI から操作を行います。
+currencyservice は Git を使った継続的デプロイではなく、CLI から操作を行います。
 
 ### **1. Cloud Run GUI に移動**
 
@@ -598,14 +604,14 @@ gcloud run deploy currencyservice --source src/currencyservice/ --allow-unauthen
 
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert
+curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert | jq
 ```
 
 下記のように返ってくれば正しくデプロイできています。
 
 ```terminal
 {
-    "answer": 1098
+  "answer": 1219
 }
 ```
 
@@ -619,13 +625,13 @@ sumservice に currencyservice と連携する API（sumcurrency）の API を�
 `src/sumservice/main.py` にコメントアウトされた状態で記載されているので、コメントを削除します。
 
 ```bash
-sed -i -e '45,85s/^#//g' src/sumservice/main.py
+sed -i -e '45,72s/^#//g' src/sumservice/main.py
 ```
 
-追加したコードは下記のコマンドで表示できます。
+追加した (アンコメントされた) コードは下記のコマンドで表示できます。
 
 ```bash
-sed -n 45,85p src/sumservice/main.py
+sed -n 45,72p src/sumservice/main.py
 ```
 
 ### **2. デプロイ**
@@ -636,7 +642,7 @@ sed -n 45,85p src/sumservice/main.py
 git add . && git commit -m "Add integration to currencyservice" && git push google {{branch-name}}
 ```
 
-Cloud Build による更新内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日がたった今になったことを確認します。
+Cloud Build による更新内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日が **たった今** になったことを確認します。
 
 ### **3. 環境変数の設定**
 
@@ -649,16 +655,18 @@ gcloud run services update sumservice --set-env-vars=CURRENCY_SERVICE_URL=${CURR
 
 ### **4. 動作確認**
 
+10 US ドル + 20 ユーロ + 30 豪ドル の日本円は?
+
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' ${SUM_URL}/sumcurrency
+curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' ${SUM_URL}/sumcurrency | jq
 ```
 
 以下のように返ってくれば、正しく稼働しています。
 
 ```terminal
 {
-    "sum": 6306
+    "sum": 6673
 }
 ```
 
@@ -736,11 +744,11 @@ sed -i -e '58s/#//' src/sumservice/main.py
 git add . && git commit -m "Update to use a token accessing currencyservice" && git push google {{branch-name}}
 ```
 
-Cloud Build による修正内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日がたった今になったことを確認します。
+Cloud Build による修正内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日が **たった今** になったことを確認します。
 
 ### **3. currencyservice の全利用者呼び出し許可設定削除**
 
-最後に currencyservice の呼び出し許可設定を変更し、権限を持っているアカウントのみ呼び出せるようにします。
+最後に currencyservice の呼び出し許可設定を変更し、権限を持っているサービスアカウントのみ呼び出せるようにします。
 
 ```bash
 gcloud run services remove-iam-policy-binding currencyservice --member="allUsers" --role="roles/run.invoker"
@@ -752,14 +760,14 @@ sumservice からは引き続き連携ができていることを確認します
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' ${SUM_URL}/sumcurrency
+curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' ${SUM_URL}/sumcurrency | jq
 ```
 
-currencyservice へ直接アクセスをすると、エラーが出るようになったことを確認します。
+currencyservice へ直接アクセスをすると、権限エラー (403) が出るようになったことを確認します。
 
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert
+curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert | jq
 ```
 
 直接アクセスができてしまっている場合は、少し待ってみてください。
@@ -789,12 +797,18 @@ Cloud Run では、負荷に応じて自動的にスケールします。
 ### **1. Autopilot クラスタの作成**
 
 ```bash
-gcloud container clusters create-auto loadtest-{{region}} --region {{region}}
+gcloud container clusters create-auto loadtest-{{region}} --region {{region}} --async
 ```
 
 作成完了まで数分かかります。
 
-### **2. Locust のデプロイ**
+### **2. Autopilot クラスタへのアクセス設定**
+
+```bash
+gcloud container clusters get-credentials loadtest-{{region}} --region {{region}}
+```
+
+### **3. Locust のデプロイ**
 
 Kubernetes 上で動かすため、[helm](https://helm.sh/ja/) を使い Locust を導入します。
 
@@ -825,7 +839,7 @@ watch -n 5 kubectl get pods
 
 3 分程度時間がかかります。
 
-### **3. Web UI の確認**
+### **4. Web UI の確認**
 
 Locust にはポートフォワードを通して UI にアクセスします。Cloud Shell への 8080 ポートへのアクセスを、Locust のポート 8089 に転送する設定を行います。
 
@@ -848,7 +862,9 @@ Locust からアプリケーションに負荷をかけ、スケーリング、�
 Locust の UI にて下記の数値を入力後、`Start swarming` をクリックします。
 
 - `Number of total users to simulate`: 1500
-- `Spawn rate`: 10
+- `Spawn rate`: 20
+
+1 秒あたりアクセスが 20 ユーザー増加し、最終的に 1500 ユーザーがアクセスしている状態をシミュレートしています。
 
 ### **2. Cloud Run UI, Locust UI からの負荷状況の確認**
 
@@ -881,7 +897,7 @@ Cloud Run は Load balancer と組み合わせることで、簡単にアプリ�
 
 [アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/global_deployment.png)
 
-この設定を行うことで、利用者から見ると同じサービスにアクセスしていながら、自動的に利用者により近い Cloud Run にルーティングされ、ユーザ体験が向上します。
+この設定を行うことで、利用者から見ると同じ IP アドレスにアクセスしていながら、自動的に利用者により近い Cloud Run にルーティングされ、ユーザ体験が向上します。
 
 グローバル展開をするには下記の手順を実施します。
 
@@ -963,14 +979,14 @@ sumservice 単体の API: /sum
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json --region us-central1 | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum | jq
 ```
 
 sumservice + currencyservice が連携している API: /sumcurrency
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json --region us-central1 | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' ${SUM_URL}/sumcurrency
+curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' ${SUM_URL}/sumcurrency | jq
 ```
 
 <walkthrough-footnote>アメリカに sumservice, currencyservice をデプロイしました。次に先程作成したロードバランサに日本、アメリカで稼働しているアプリケーションを紐付けます。</walkthrough-footnote>
@@ -992,8 +1008,8 @@ bash scripts/add_sumservice_to_backend.sh us-central1
 
 ```bash
 LB_IP=$(gcloud compute addresses describe --global sumservice-ip --format='value(address)')
-curl -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' https://${LB_IP}/sum
-curl -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency
+curl -s -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' https://${LB_IP}/sum
+curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency | jq
 ```
 
 エラーが返ってくる場合は、少し待ってみてから再度アクセスをしてみてください。
@@ -1014,14 +1030,14 @@ currencyservice は権限を持った方のみがアクセスできる状態で�
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json --region asia-northeast1 | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum | jq
 ```
 
 アメリカ:
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json --region us-central1 | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum | jq
 ```
 
 ### **2. アクセス許可設定（ingress）を修正**
@@ -1046,22 +1062,22 @@ gcloud run services update sumservice --ingress internal-and-cloud-load-balancin
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json --region asia-northeast1 | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
 ```
 
 アメリカ:
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json --region us-central1 | jq -r '.status.address.url')
-curl -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
+curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum
 ```
 
 ### **4. ロードバランサ経由でのアクセス**
 
 ```bash
 LB_IP=$(gcloud compute addresses describe --global sumservice-ip --format='value(address)')
-curl -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' https://${LB_IP}/sum
-curl -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency
+curl -s -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' https://${LB_IP}/sum | jq
+curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency | jq
 ```
 
 <walkthrough-footnote>無事、アクセスをロードバランサからのみに制限することができました。</walkthrough-footnote>
@@ -1070,7 +1086,7 @@ curl -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", 
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
-これにて Cloud Run を利用したアプリケーションのデプロイ、簡易な CI / CD パイプラインの作成、セキュリティ向上策の導入、パフォーマンス・チューニング、そしてロードバランサを使ったグローバル展開が完了しました。
+これにて Cloud Run を利用したアプリケーションのデプロイ、継続的デプロイ設定を使ったサービスの作成、セキュリティ向上策の導入、パフォーマンス・チューニング、そしてロードバランサを使ったグローバル展開が完了しました。
 
 デモで使った資材が不要な方は、次の手順でクリーンアップを行って下さい。
 
