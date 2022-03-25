@@ -59,10 +59,10 @@ type convertHandler struct {
 func currencies() map[string]float64 {
 	return map[string]float64{
 		"JPY": 100,
-		"USD": 0.91,
-		"EUR": 0.75,
-		"BRL": 4.77,
-		"AUD": 1.18,
+		"USD": 0.82,
+		"EUR": 0.74,
+		"BRL": 3.96,
+		"AUD": 1.09,
 	}
 }
 
