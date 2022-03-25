@@ -70,19 +70,19 @@ def sum_numbers():
 #        return jsonify({'error': 'Bad Request', 'message': 'Failed to retrieve currecy data'}), 500
 #
 #    return jsonify({'sum': answer}), 200
-#
-#
-#def retrieve_token(target_url):
-#    # Set up metadata server request
-#    metadata_server_token_url = 'http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience='
-#
-#    token_request_url = metadata_server_token_url + target_url
-#    token_request_headers = {'Metadata-Flavor': 'Google'}
-#
-#    # Fetch the token
-#    token_response = requests.get(
-#        token_request_url, headers=token_request_headers)
-#    return token_response.content.decode("utf-8")
+
+
+def retrieve_token(target_url):
+    # Set up metadata server request
+    metadata_server_token_url = 'http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience='
+
+    token_request_url = metadata_server_token_url + target_url
+    token_request_headers = {'Metadata-Flavor': 'Google'}
+
+    # Fetch the token
+    token_response = requests.get(
+        token_request_url, headers=token_request_headers)
+    return token_response.content.decode("utf-8")
 
 
 if __name__ == "__main__":
