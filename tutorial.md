@@ -8,9 +8,6 @@
 </walkthrough-project-setup>
 
 <walkthrough-watcher-constant key="region" value="asia-northeast1"></walkthrough-watcher-constant>
-<walkthrough-watcher-constant key="repo-name" value="cloudrun-handson"></walkthrough-watcher-constant>
-<walkthrough-watcher-constant key="github-repo" value="google-cloud-japan/gcp-getting-started-cloudrun/main"></walkthrough-watcher-constant>
-<walkthrough-watcher-constant key="branch-name" value="main"></walkthrough-watcher-constant>
 
 ## **環境準備**
 
@@ -62,6 +59,32 @@ gcloud config set run/platform managed
 
 <walkthrough-footnote>CLI（gcloud）で利用するプロジェクトの指定、Cloud Run のデフォルト値の設定が完了しました。次にハンズオンで利用する機能（API）を有効化します。</walkthrough-footnote>
 
+## **参考: Cloud Shell の接続が途切れてしまったときは?**
+
+一定時間非アクティブ状態になる、またはブラウザが固まってしまったなどで `Cloud Shell` が切れてしまう、またはブラウザのリロードが必要になる場合があります。その場合は以下の対応を行い、チュートリアルを再開してください。
+
+### **1. チュートリアル資材があるディレクトリに移動する**
+
+```bash
+cd ~/gcp-getting-started-cloudrun
+```
+
+### **2. チュートリアルを開く**
+
+```bash
+teachme tutorial.md
+```
+
+### **3. gcloud のデフォルト設定**
+
+```bash
+gcloud config set project {{project-id}}
+gcloud config set run/region {{region}}
+gcloud config set run/platform managed
+```
+
+途中まで進めていたチュートリアルのページまで `Next` ボタンを押し、進めてください。
+
 ## **Google Cloud 環境設定**
 
 Google Cloud では利用したい機能（API）ごとに、有効化を行う必要があります。
@@ -88,9 +111,12 @@ Cloud Run では様々な方法でデプロイが可能です。ここでは以�
 
 ## **サンプルアプリケーション**
 
-サンプル アプリケーションは Python で書かれており、HTTP で下記の REST API を公開しています。
+サンプル アプリケーションは Python で書かれており、HTTP で 2 つの REST API を公開しています。
 
-このアプリケーションは数字の合計値を返す機能を備えているので以降、`sumservice` と呼びます。
+- 固定文字列を返す `Hello Challenger API`
+- 数値の合計を返す `数値合計 API`
+
+このアプリケーションの主たる機能は数字の合計値を返すものなので以降、`sumservice` と呼びます。
 
 ### **Hello Challenger API**
 
@@ -137,18 +163,20 @@ Response:
 
 ## **Dockerfile を使い、ローカルでコンテナを作成、レジストリにプッシュしてからデプロイ**
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/step_by_step_deployment.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/step_by_step_deployment.png?raw=true)
 
 ### **準備**
 
-下記のボタンから Cloud Run の GUI を開いておきましょう。
+下記のように GUI を操作し Cloud Run の管理画面を開いておきましょう。
 
-<walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
+<walkthrough-spotlight-pointer spotlightId="console-nav-menu">ナビゲーションメニュー</walkthrough-spotlight-pointer> -> サーバーレス -> Cloud Run
 
-### **1. リポジトリを作成（Artifact Registory）**
+また以降の手順で Cloud Run の管理画面は何度も開くことになるため、ピン留め (Cloud Run メニューにマウスオーバーし、ピンのアイコンをクリック) しておくと便利です。
+
+### **1. リポジトリを作成（Artifact Registry）**
 
 ```bash
-gcloud artifacts repositories create {{repo-name}} --repository-format=docker --location={{region}} --description="Docker repository for Cloud Run hands-on"
+gcloud artifacts repositories create cloudrun-handson --repository-format=docker --location={{region}} --description="Docker repository for Cloud Run hands-on"
 ```
 
 ### **2. docker コマンドの認証設定**
@@ -162,21 +190,21 @@ gcloud auth configure-docker {{region}}-docker.pkg.dev
 ### **3. ローカル（Cloud Shell 上）にコンテナを作成**
 
 ```bash
-(cd src/sumservice && docker build -t {{region}}-docker.pkg.dev/{{project-id}}/{{repo-name}}/sumservice:v1 .)
+(cd src/sumservice && docker build -t {{region}}-docker.pkg.dev/{{project-id}}/cloudrun-handson/sumservice:v1 .)
 ```
 
-**ヒント**: カレントディレクトリを変えずに実行するために、カッコでくくっています。
+**ヒント**: カレントディレクトリを変えずに実行するために、カッコでくくっています。またコマンドの出力で赤字で `WARNING` が出力されますが、こちらは問題ありません。コンテナを作成するときに `Dockerfile` 内で `pip` コマンドを `root` ユーザで実行しているためです。コンテナの中で専用ユーザを作るなどで対応できますが、本質ではないので入れていません。
 
 ### **4. 作成したコンテナをコンテナレジストリ（Artifact Registry）へ登録（プッシュ）する**
 
 ```bash
-docker push {{region}}-docker.pkg.dev/{{project-id}}/{{repo-name}}/sumservice:v1
+docker push {{region}}-docker.pkg.dev/{{project-id}}/cloudrun-handson/sumservice:v1
 ```
 
 ### **5. Cloud Run にデプロイ**
 
 ```bash
-gcloud run deploy sumservice --image={{region}}-docker.pkg.dev/{{project-id}}/{{repo-name}}/sumservice:v1 --allow-unauthenticated
+gcloud run deploy sumservice --image={{region}}-docker.pkg.dev/{{project-id}}/cloudrun-handson/sumservice:v1 --allow-unauthenticated
 ```
 
 ### **6. 動作確認**
@@ -190,15 +218,23 @@ curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 10
 
 ```terminal
 {
-    "sum": 460
+  "sum": 460
 }
 ```
 
-<walkthrough-footnote>コンテナレジストリ、コンテナの作成、プッシュなど一つ一つの手順をマニュアルで実行し、Cloud Run にデプロイすることができました。次により簡易にデプロイする方法を試します。</walkthrough-footnote>
+### **7. サービスの削除**
+
+次に、より簡易にデプロイする方法を試すため、ここでデプロイしたサービスは削除しておきます。
+
+```bash
+gcloud run services delete sumservice --quiet
+```
+
+<walkthrough-footnote>コンテナレジストリ、コンテナの作成、プッシュなど一つ一つの手順をマニュアルで実行し、Cloud Run にデプロイすることができました。次に、より簡易にデプロイする方法を試します。</walkthrough-footnote>
 
 ## **Buildpacks、Cloud Build を使い、Dockerfile 無し、かつリポジトリの指定無しにデプロイ**
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/single_step_deployment.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/single_step_deployment.png?raw=true)
 
 ### **1. Dockerfile の削除（移動）**
 
@@ -218,8 +254,6 @@ gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 
 ソースからのデプロイでは初回にコンテナを保管するための Artifact Registry を作成するか質問されます。そのまま `Enter` を押し、先に進めてください。
 
-同じサービス名でのデプロイのため、**新しいリビジョン**が作成されます。
-
 ### **3. 動作確認**
 
 ```bash
@@ -231,7 +265,7 @@ curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 10
 
 ```terminal
 {
-    "sum": 460
+  "sum": 460
 }
 ```
 
@@ -243,7 +277,7 @@ curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 10
 
 ### **4. Dockerfile を戻す**
 
-Dockerfile 無しでのコンテナ作成は、毎回内部でアプリケーションの分析が行われているため時間がかかってしまいます。先程退避しておいた Dockerfile を戻し以降のコンテナ作成の時間を短縮します。
+Dockerfile 無しでのコンテナ作成は、毎回内部でアプリケーションの分析が行われているため時間がかかってしまいます。先程退避しておいた Dockerfile を戻し、以降のコンテナ作成の時間を短縮します。
 
 ```bash
 mv Dockerfile src/sumservice/
@@ -269,7 +303,7 @@ Cloud Run ではリリースの構成、トラフィックのコントロール�
 
 カナリアリリースは新リビジョンをトラフィックを流さない状態でデプロイし、徐々にトラフィックを流すように設定することで実現します。
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/canary_release.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/canary_release.png?raw=true)
 
 ### **1. アプリケーションにアクセス**
 
@@ -285,10 +319,10 @@ curl ${SUM_URL}/ && echo
 ### **2. アプリケーションの修正**
 
 ```bash
-sed -i -e "s/Challenger[0-9]*/Challenger09/" src/sumservice/main.py
+sed -i -e "s/Challenger[0-9]*/Challenger10/" src/sumservice/main.py
 ```
 
-`Hello Challenger09!` とレスポンスを返すように修正を行いました。
+`Hello Challenger10!` とレスポンスを返すように修正を行いました。
 
 ### **3. 新リビジョンのデプロイ**
 
@@ -306,7 +340,7 @@ OLD_REV=$(gcloud run revisions list --format json | jq -r '.[].metadata.name' | 
 gcloud run services update-traffic sumservice --to-revisions=${NEW_REV}=10,${OLD_REV}=90
 ```
 
-ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれ (10 回に 1 回) に `Hello Challenger09!` と表示されます。
+ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。まれ (10 回に 1 回) に `Hello Challenger10!` と表示されます。
 
 ### **5. すべてのアクセスを新リビジョンに割り振り**
 
@@ -314,7 +348,7 @@ gcloud run services update-traffic sumservice --to-revisions=${NEW_REV}=10,${OLD
 gcloud run services update-traffic sumservice --to-latest
 ```
 
-再度ブラウザからアクセスすると、何度アクセスしてもすべてのレスポンスが `Hello Challenger09!` となっていることを確認します。
+再度ブラウザからアクセスすると、何度アクセスしてもすべてのレスポンスが `Hello Challenger10!` となっていることを確認します。
 
 <walkthrough-footnote>リビジョン、トラフィックをコントロールし、カナリアリリースを実現しました。次に、新リビジョンを特定の URL でのみデプロイする方法を学びます。</walkthrough-footnote>
 
@@ -322,15 +356,15 @@ gcloud run services update-traffic sumservice --to-latest
 
 デプロイ時にタグを付与することで、リビジョンに特定の URL をもたせることが可能です。ここではタグと、前のページで出てきた --no-traffic を組み合わせ、新リビジョンを限定公開します。
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/limited_release.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/limited_release.png?raw=true)
 
 ### **1. アプリケーションの修正**
 
 ```bash
-sed -i -e 's/Challenger[0-9]*/Challenger10/' src/sumservice/main.py
+sed -i -e 's/Challenger[0-9]*/Challenger11/' src/sumservice/main.py
 ```
 
-**ヒント**: 前ページの更新で、すべてのアクセスに `Hello Challenger09!` と返すようになっていました。ここでは `Hello Challenger10!` と返すように修正します。
+**ヒント**: 前ページの更新で、すべてのアクセスに `Hello Challenger10!` と返すようになっていました。ここでは `Hello Challenger11!` と返すように修正します。
 
 ### **2. タグを付けて、新リビジョンをデプロイ**
 
@@ -341,9 +375,9 @@ gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --
 ### **3. 新リビジョンへアクセス**
 
 ターミナルに出力された**タグ付き URL** をクリックします。
-新リビジョンの `Challenger10` が返ってくることを確認します。
+新リビジョンの `Challenger11` が返ってくることを確認します。
 
-今回デプロイしたリビジョンはこの URL でのみ稼働しています。そして、タグがない URL は旧バージョンが稼働しています。つまりこれを使うことで、事前に限定ユーザによるテストが可能です。
+今回デプロイしたリビジョンはこの URL でのみ稼働しています。そして、タグがない URL は旧バージョンが稼働しています。つまりこれを使うことで、**事前に限定ユーザによるテスト**が可能です。
 
 ### **4. 本番リリース（すべてのアクセスを新リビジョンに割り振り）**
 
@@ -371,7 +405,7 @@ Cloud Run ではソースコード リポジトリ（Cloud Source Repositories, 
 
 ここで構築するパイプラインのアーキテクチャは下記になります。
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/cicd_pipeline.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/cicd_pipeline.png?raw=true)
 
 ## **Git クライアント設定**
 
@@ -425,10 +459,10 @@ git remote add google https://source.developers.google.com/p/{{project-id}}/r/cl
 今まで修正していた内容をコミット、確定し、git push コマンドを使い、CSR に資材を転送（プッシュ）します。
 
 ```bash
-git add . && git commit -m "Fix a message for sumservice" && git push google {{branch-name}}
+git add . && git commit -m "Fix a message for sumservice" && git push google main
 ```
 
-**GUI**: [Source Repository](https://source.cloud.google.com/{{project-id}}/cloudrun-handson/+/{{branch-name}}:) から資材がプッシュされたことを確認できます。
+**GUI**: [Source Repository](https://source.cloud.google.com/{{project-id}}/cloudrun-handson/+/main:) から資材がプッシュされたことを確認できます。
 
 <walkthrough-footnote>Cloud Shell 上にある資材を CSR のリポジトリにプッシュしました。次にこのリポジトリを参照先として、Cloud Run をデプロイします。</walkthrough-footnote>
 
@@ -438,22 +472,22 @@ Cloud Run の CI / CD 設定は GUI から行います。
 
 ### **1. Cloud Run GUI に移動**
 
-下記のボタンから Cloud Run の GUI に移動します。
+下記のように GUI を操作し Cloud Run の管理画面を開きます。
 
-<walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
+<walkthrough-spotlight-pointer spotlightId="console-nav-menu">ナビゲーションメニュー</walkthrough-spotlight-pointer> -> サーバーレス -> Cloud Run
 
 ### **2. サービスの作成を開始**
 
 <walkthrough-spotlight-pointer spotlightId="run-create-service">サービスの作成</walkthrough-spotlight-pointer> ボタンをクリックし作成を開始します。
 
-### **3. サービスの設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_a_cloudrun_service.png)
+### **3. サービスの設定** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/create_a_cloudrun_service.png?raw=true)
 
 1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
 1. サービス名に `sumservice` と入力します
 1. リージョンは `asia-northeast1 (東京)` を選択します
 1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
 
-### **4. Cloud Build の設定** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_source_repository.png) [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/configure_build.png)
+### **4. Cloud Build の設定** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_source_repository.png?raw=true) [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_build.png?raw=true)
 
 1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
 1. リポジトリで `cloudrun-handson` を選択します
@@ -463,7 +497,7 @@ Cloud Run の CI / CD 設定は GUI から行います。
 1. ソースの場所に `/src/sumservice/Dockerfile` と入力します
 1. `保存` ボタンをクリックします
 
-### **5. サービスの作成** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/create_service.png)
+### **5. サービスの作成** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/create_service.png?raw=true)
 
 1. 下部にスクロールし認証の項目で `未認証の呼び出しを許可` をチェックします
 1. `作成` ボタンをクリックします
@@ -472,9 +506,9 @@ Cloud Run の CI / CD 設定は GUI から行います。
 
 デプロイが完了するまでに数分時間がかかります。完了すると自動的に画面がリロードされます。
 
-### **6. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/access_deployed_service.png)
+### **6. 動作確認** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/access_deployed_service.png?raw=true)
 
-GUI に表示されている URL のリンクをクリックし、`Hello Challenger10!` と表示されていれば成功です。
+GUI に表示されている URL のリンクをクリックし、`Hello Challenger11!` と表示されていれば成功です。
 
 <walkthrough-footnote>これで Cloud Run と Git リポジトリを紐付けて、ソースコードの変更から Cloud Run へのデプロイを自動化することができました。次にこのパイプラインの動作を確認します。</walkthrough-footnote>
 
@@ -482,7 +516,7 @@ GUI に表示されている URL のリンクをクリックし、`Hello Challen
 
 ### **1. アプリケーションの修正**
 
-`Hello Challenger10!` と修正していたメッセージを `Hello Challener01!` に戻します。
+`Hello Challenger11!` と修正していたメッセージを `Hello Challener01!` に戻します。
 
 ```bash
 sed -i -e 's/Challenger[0-9]*/Challenger01/' src/sumservice/main.py
@@ -491,24 +525,23 @@ sed -i -e 's/Challenger[0-9]*/Challenger01/' src/sumservice/main.py
 ### **2. リポジトリへのプッシュ**
 
 ```bash
-git add . && git commit -m "Update the message to test CI/CD deployment" && git push google {{branch-name}}
+git add . && git commit -m "Update the message to test CI/CD deployment" && git push google main
 ```
 
-### **3. ビルド状況の確認**
+### **3. ビルド完了まで待機**
 
-Cloud Build の GUI から履歴を選び、ビルドの進行状況が確認できます。ビルドが走っていることを確認し、完了まで待ちます。
+```bash
+BUILD_ID=$(gcloud beta builds list --sort-by ~createTime --limit 1 --format json | jq -r '.[].id')
+while true; do gcloud beta builds describe $BUILD_ID --format json | jq -r '.status' | grep SUCCESS && echo 'Build finised!!!' && break; echo 'Waiting to finish the build...'; sleep 5; done
+```
 
-<walkthrough-menu-navigation sectionId="CLOUD_BUILD_SECTION"></walkthrough-menu-navigation>
-
-### **4. 動作確認** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/confirm_cicd_pipeline.png)
-
-<walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
+### **4. 動作確認** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/confirm_cicd_pipeline.png?raw=true)
 
 Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello Challenger01!` と表示されていれば成功です。
 
 **ヒント**: GUI から新しいリビジョンがデプロイ完了したことを確認した後に、アクセスしてください。
 
-<walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。以降は sumservice を修正する場合、できる限りこのパイプラインを活用します。</walkthrough-footnote>
+<walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。ビルドの確認に手間がかかるため、以降はパイプラインを利用せず gcloud コマンドで Cloud Run サービスを操作します。</walkthrough-footnote>
 
 ## **サンプルアプリケーションの拡張**
 
@@ -518,7 +551,7 @@ Cloud Run の GUI に表示されている URL のリンクをクリックし、
 
 その機能は通貨情報も含めて足し算をし、結果を日本円に換算して返す機能です。
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/enhance_sample_application.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/enhance_sample_application.png?raw=true)
 
 ### **インターフェース（sumservice の拡張 API）**
 
@@ -543,7 +576,7 @@ Response:
 }
 ```
 
-このアプリケーションはマイクロサービス アーキテクチャを採用することとし、通貨ごとの情報は別サービス（currencyservice）が管理することとします。
+このアプリケーションはマイクロサービス アーキテクチャを採用することとし、**通貨ごとの情報は別サービス（currencyservice）が管理**することとします。
 
 ## **currencyservice**
 
@@ -586,13 +619,13 @@ Response:
 ## **currencyservice のデプロイ**
 
 まず sumservice からアクセスを受け付ける、currencyservice をデプロイします。
-currencyservice は Git を使った継続的デプロイではなく、CLI から操作を行います。
+currencyservice は Git を使った継続的デプロイではなく、CLI (gcloud) から操作を行います。
 
 ### **1. Cloud Run GUI に移動**
 
-Cloud Run の GUI が開いていない方は、下記のボタンから Cloud Run の GUI に移動します。
+下記のように GUI を操作し Cloud Run の管理画面を開きます。
 
-<walkthrough-menu-navigation sectionId="CLOUD_RUN_SECTION"></walkthrough-menu-navigation>
+<walkthrough-spotlight-pointer spotlightId="console-nav-menu">ナビゲーションメニュー</walkthrough-spotlight-pointer> -> サーバーレス -> Cloud Run
 
 ### **2. CLI による currencyservice のデプロイ**
 
@@ -628,7 +661,7 @@ sumservice に currencyservice と連携する API（sumcurrency）の API を�
 sed -i -e '45,72s/^#//g' src/sumservice/main.py
 ```
 
-追加した (アンコメントされた) コードは下記のコマンドで表示できます。
+追加した (アンコメントされた) コードは下記のコマンドで確認できます。
 
 ```bash
 sed -n 45,72p src/sumservice/main.py
@@ -639,10 +672,8 @@ sed -n 45,72p src/sumservice/main.py
 更新した内容をデプロイします。
 
 ```bash
-git add . && git commit -m "Add integration to currencyservice" && git push google {{branch-name}}
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 ```
-
-Cloud Build による更新内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日が **たった今** になったことを確認します。
 
 ### **3. 環境変数の設定**
 
@@ -666,7 +697,7 @@ curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", 
 
 ```terminal
 {
-    "sum": 6673
+  "sum": 6673
 }
 ```
 
@@ -676,13 +707,13 @@ curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", 
 
 <walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
 
-Cloud Run では様々なセキュリティを向上させる機能、プラクティスがあります。
+Cloud Run では様々なセキュリティを向上させるための機能、プラクティスがあります。
 今回はそのうち下記の 2 つを実施します。
 
 - サービス個別の権限設定
 - sumservice + currencyservice のセキュアな連携
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/security.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/security.png?raw=true)
 
 ## **サービス個別の権限設定**
 
@@ -741,10 +772,8 @@ sed -i -e '58s/#//' src/sumservice/main.py
 修正した内容をデプロイします。
 
 ```bash
-git add . && git commit -m "Update to use a token accessing currencyservice" && git push google {{branch-name}}
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 ```
-
-Cloud Build による修正内容のデプロイが完了するまで待ちます。Cloud Run GUI の sumservice における最終デプロイ日が **たった今** になったことを確認します。
 
 ### **3. currencyservice の全利用者呼び出し許可設定削除**
 
@@ -767,7 +796,7 @@ currencyservice へ直接アクセスをすると、権限エラー (403) が出
 
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
-curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert | jq
+curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert
 ```
 
 直接アクセスができてしまっている場合は、少し待ってみてください。
@@ -802,13 +831,19 @@ gcloud container clusters create-auto loadtest-{{region}} --region {{region}} --
 
 作成完了まで数分かかります。
 
-### **2. Autopilot クラスタへのアクセス設定**
+### **2. クラスタ作成完了まで待機**
+
+```bash
+while true; do gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' && echo 'Cluster is created!!!' && break; echo 'Waiting for a cluster is created...'; sleep 20; done
+```
+
+### **3. Autopilot クラスタへのアクセス設定**
 
 ```bash
 gcloud container clusters get-credentials loadtest-{{region}} --region {{region}}
 ```
 
-### **3. Locust のデプロイ**
+### **4. Locust のデプロイ**
 
 Kubernetes 上で動かすため、[helm](https://helm.sh/ja/) を使い Locust を導入します。
 
@@ -839,7 +874,7 @@ watch -n 5 kubectl get pods
 
 3 分程度時間がかかります。
 
-### **4. Web UI の確認**
+### **5. Web UI の確認**
 
 Locust にはポートフォワードを通して UI にアクセスします。Cloud Shell への 8080 ポートへのアクセスを、Locust のポート 8089 に転送する設定を行います。
 
@@ -855,16 +890,16 @@ kubectl --namespace default port-forward service/locust 8080:8089
 
 ## **アプリケーションへの負荷テスト**
 
-### **1. Locust からの負荷テスト** [![screenshot](https://raw.githubusercontent.com/{{github-repo}}/images/link_image.png)](https://raw.githubusercontent.com/{{github-repo}}/images/locust_ui.png)
+### **1. Locust からの負荷テスト** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/locust_ui.png?raw=true)
 
 Locust からアプリケーションに負荷をかけ、スケーリング、エラー、負荷の状況を確認します。
 
 Locust の UI にて下記の数値を入力後、`Start swarming` をクリックします。
 
 - `Number of total users to simulate`: 1500
-- `Spawn rate`: 20
+- `Spawn rate`: 30
 
-1 秒あたりアクセスが 20 ユーザー増加し、最終的に 1500 ユーザーがアクセスしている状態をシミュレートしています。
+1 秒あたりアクセスが 30 ユーザー増加し、最終的に 1500 ユーザーがアクセスしている状態をシミュレートしています。
 
 ### **2. Cloud Run UI, Locust UI からの負荷状況の確認**
 
@@ -883,6 +918,8 @@ Cloud Run では、パフォーマンスをチューニングするための様�
 - [CPU の割り当て](https://cloud.google.com/run/docs/configuring/cpu)
 - [最大同時実行の設定](https://cloud.google.com/run/docs/configuring/concurrency)
 
+**注**: 参考ページにそれぞれ手順が記載されていますが、**コマンドライン** での実行手順を用いてください。Console (GUI) から設定変更を行うと、前の手順で行ったサービスアカウント設定がリセットされてしまいます。
+
 **完了後、Locust からの負荷テストは止めましょう。Locust UI のメニュー内の STOP ボタンをクリックします。またターミナルでは port-forward を Ctrl-C で終了します。**
 
 <walkthrough-footnote>負荷ツールを利用し、Cloud Run に負荷をかけ、UI から挙動を確認しました。次に展開しているマイクロサービスをグローバルに展開する方法を学びます。</walkthrough-footnote>
@@ -895,7 +932,7 @@ Cloud Run は Load balancer と組み合わせることで、簡単にアプリ�
 
 今は東京リージョンのみ稼働しているアプリケーションを、アメリカにも配置してみましょう。
 
-[アーキテクチャ図](https://raw.githubusercontent.com/{{github-repo}}/images/global_deployment.png)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/global_deployment.png?raw=true)
 
 この設定を行うことで、利用者から見ると同じ IP アドレスにアクセスしていながら、自動的に利用者により近い Cloud Run にルーティングされ、ユーザ体験が向上します。
 
