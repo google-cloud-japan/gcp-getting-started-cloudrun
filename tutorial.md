@@ -532,7 +532,7 @@ git add . && git commit -m "Update the message to test CI/CD deployment" && git 
 
 ```bash
 BUILD_ID=$(gcloud beta builds list --sort-by ~createTime --limit 1 --format json | jq -r '.[].id')
-while true; do gcloud beta builds describe $BUILD_ID --format json | jq -r '.status' | grep SUCCESS && echo 'Build finised!!!' && break; echo 'Waiting to finish the build...'; sleep 5; done
+while true; do gcloud beta builds describe $BUILD_ID --format json | jq -r '.status' | grep SUCCESS && echo 'Build finised :-)' && break; echo 'Waiting to finish the build...'; sleep 5; done
 ```
 
 ### **4. 動作確認** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/confirm_cicd_pipeline.png?raw=true)
@@ -834,7 +834,7 @@ gcloud container clusters create-auto loadtest-{{region}} --region {{region}} --
 ### **2. クラスタ作成完了まで待機**
 
 ```bash
-while true; do gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' && echo 'Cluster is created!!!' && break; echo 'Waiting for a cluster is created...'; sleep 20; done
+while true; do gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' && echo 'Cluster is created :-)' && break; echo 'Waiting for a cluster is created...'; sleep 20; done
 ```
 
 ### **3. Autopilot クラスタへのアクセス設定**
