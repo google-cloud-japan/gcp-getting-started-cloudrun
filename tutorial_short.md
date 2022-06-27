@@ -1,12 +1,10 @@
-# **はじめてみよう Cloud Run ハンズオン**
+# **はじめてみよう Cloud Run ハンズオン (Short version)**
 
 ## Cloud Run ハンズオン
 
 本ハンズオンではコンテナをサーバーレスで動かすサービスである [Cloud Run](https://cloud.google.com/run) の様々な機能を体験します。
 
-- Dockerfile 無しでのコンテナ作成からデプロイ
 - カナリアリリース、プライベートリリース (タグをつけたリリース) などのトラフィック コントロール
-- Git リポジトリから Cloud Run への Continuous Deployment
 - 複数のサービスを Cloud Run で動かし連携させる
 - サービスに負荷をかけ、オートスケーリングを確認
 - サービスアカウントを用いたセキュリティ設定
@@ -30,7 +28,7 @@ export PROJECT_ID=[PROJECT_ID]
 gcloud beta billing projects describe ${PROJECT_ID} | grep billingEnabled
 ```
 
-Authorize Cloud Shell という確認メッセージが出た場合は `Authorize` をクリックします。
+**Cloud Shell の承認** という確認メッセージが出た場合は **承認** をクリックします。
 
 出力結果の `billingEnabled` が **true** になっていることを確認してください。**false** の場合は、こちらのプロジェクトではハンズオンが進められません。別途、課金を有効化したプロジェクトを用意し、本ページの #1 の手順からやり直してください。
 
@@ -97,7 +95,7 @@ cd ~/gcp-getting-started-cloudrun
 ### **2. チュートリアルを開く**
 
 ```bash
-teachme tutorial.md
+teachme tutorial_short.md
 ```
 
 ### **3. プロジェクト ID を設定する**
@@ -129,16 +127,15 @@ gcloud services enable artifactregistry.googleapis.com run.googleapis.com cloudb
 
 <walkthrough-footnote>必要な機能が使えるようになりました。次に実際に Cloud Run にアプリケーションをデプロイする方法を学びます。</walkthrough-footnote>
 
-## **Cloud Run への複数のデプロイ手段**
+## **Cloud Run へのアプリケーションのデプロイ**
 
-<walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
+<walkthrough-tutorial-duration duration=10></walkthrough-tutorial-duration>
 
-Cloud Run では様々な方法でデプロイが可能です。ここでは以下の 2 つの方法でサンプルアプリケーションをデプロイします。
+Cloud Run では様々な方法でデプロイが可能です。ここでは基本的な以下の方法でアプリケーションをデプロイします。　
 
 - Dockerfile を使い、ローカルでコンテナを作成、レジストリにプッシュしてからデプロイ
-- Buildpacks、Cloud Build を使い、Dockerfile 無し、かつリポジトリの指定無しにデプロイ
 
-<walkthrough-footnote>Cloud Run では複数のデプロイ方法があることを学びます。まず、本ハンズオンで利用するサンプルアプリケーションを見てみましょう。</walkthrough-footnote>
+<walkthrough-footnote>まず、本ハンズオンで利用するサンプルアプリケーションを見てみましょう。</walkthrough-footnote>
 
 ## **サンプルアプリケーション**
 
@@ -251,68 +248,7 @@ curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 10
 }
 ```
 
-### **7. サービスの削除**
-
-次に、より簡易にデプロイする方法を試すため、ここでデプロイしたサービスは削除しておきます。
-
-```bash
-gcloud run services delete sumservice --quiet
-```
-
-<walkthrough-footnote>コンテナレジストリ、コンテナの作成、プッシュなど一つ一つの手順をマニュアルで実行し、Cloud Run にデプロイすることができました。次に、より簡易にデプロイする方法を試します。</walkthrough-footnote>
-
-## **Buildpacks、Cloud Build を使い、Dockerfile 無し、かつリポジトリの指定無しにデプロイ**
-
-[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/single_step_deployment.png?raw=true)
-
-### **1. Dockerfile の削除（移動）**
-
-Dockerfile 無しでデプロイできることを確かめるために、Dockerfile を退避します。
-
-```bash
-mv src/sumservice/Dockerfile ./
-```
-
-**ヒント**: Buildpacks というソフトウェアを使い、Dockerfile 無しでのデプロイを実現しています。詳細は[こちら](https://cloud.google.com/blog/ja/products/containers-kubernetes/google-cloud-now-supports-buildpacks)を参照してください。
-
-### **2. 一括でデプロイ**
-
-```bash
-gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
-```
-
-ソースからのデプロイでは初回にコンテナを保管するための Artifact Registry を作成するか質問されます。そのまま `Enter` を押し、先に進めてください。
-
-### **3. 動作確認**
-
-```bash
-SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
-curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' ${SUM_URL}/sum | jq
-```
-
-先程と同様に、次のように返ってくることを確認します。
-
-```terminal
-{
-  "sum": 460
-}
-```
-
-前項の手順と比べ、以下の部分が簡略化できたことがわかります。
-
-- Dockerfile の用意
-- コンテナレジストリの作成
-- コンテナをローカルで作成
-
-### **4. Dockerfile を戻す**
-
-Dockerfile 無しでのコンテナ作成は、毎回内部でアプリケーションの分析が行われているため時間がかかってしまいます。先程退避しておいた Dockerfile を戻し、以降のコンテナ作成の時間を短縮します。
-
-```bash
-mv Dockerfile src/sumservice/
-```
-
-<walkthrough-footnote>gcloud コマンドを使い、ソースコードから Cloud Run へのデプロイが 1 コマンドでできることを学びました。次に本番のユースケースに合わせた、Cloud Run でのより進んだデプロイ方法を学びます。</walkthrough-footnote>
+<walkthrough-footnote>コンテナレジストリ、コンテナの作成、プッシュなど一つ一つの手順をマニュアルで実行し、Cloud Run にデプロイすることができました。次に、Cloud Run のトラフィック コントロールを試します。</walkthrough-footnote>
 
 ## **様々なリリース構成、トラフィックのコントロール**
 
@@ -358,6 +294,8 @@ sed -i -e "s/Challenger[0-9]*/Challenger10/" src/sumservice/main.py
 ```bash
 gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
 ```
+
+ソースコードからの初回一括デプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
 
 **ヒント**: 新リビジョンにトラフィックを流さないよう、`--no-traffic` のオプションをつけています。これがない場合、デプロイされた瞬間にすべてのトラフィックが新リビジョンに流れます。
 
@@ -414,161 +352,7 @@ gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --
 gcloud run services update-traffic sumservice --to-latest
 ```
 
-### **5. サービスの削除**
-
-ソースコードの修正、デプロイを手動で行ってきました。次にこれらの手順を自動化する方法を学びます。そのため、現在稼働しているサービスを削除します。
-
-```bash
-gcloud run services delete sumservice --quiet
-```
-
-<walkthrough-footnote>タグ、トラフィックのコントロール機能を使うことで特定の URL でのみリリースする方法を実現しました。次はここまで手動で実施してきた手続きを自動化する方法を学びます。</walkthrough-footnote>
-
-## **CI / CD パイプラインの構築**
-
-<walkthrough-tutorial-duration duration=20></walkthrough-tutorial-duration>
-
-ここまで、ビルド、デプロイなどを手動で実施してきました。
-
-Cloud Run ではソースコード リポジトリ（Cloud Source Repositories, GitHub など）、Cloud Build と連携させ、ソースコードが Push されたことを検知してデプロイするというパイプラインを簡単に構築できます。
-
-ここで構築するパイプラインのアーキテクチャは下記になります。
-
-[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/cicd_pipeline.png?raw=true)
-
-## **Git クライアント設定**
-
-ソースコードを Google Cloud のマネージドなプライベート Git リポジトリである、Cloud Source Repositories（CSR） に格納します。
-
-そのため、リポジトリを操作するため git コマンドの設定を行います。
-
-### **1. 認証設定**
-
-Git クライアントで CSR と認証するための設定を行います。
-
-```bash
-git config --global credential.'https://source.developers.google.com'.helper gcloud.sh
-```
-
-**ヒント**: git コマンドと gcloud で利用している IAM アカウントを紐付けるための設定です。
-
-### **2. ユーザ、メールアドレス設定**
-
-USERNAME, USERNAME@EXAMPLE.com を自身のユーザ名、メールアドレスに置き換えて実行し、利用者を設定します。
-
-`USERNAME` と `USERNAME@EXAMPLE.com` そのままでも問題ありません。ここで入力した情報は今操作している Google Cloud プロジェクト上でのみ保存されているため、最後の環境のクリーンアップとともに削除されます。
-
-```bash
-git config --global user.name "USERNAME"
-git config --global user.email "USERNAME@EXAMPLE.com"
-```
-
-## **Cloud Source Repositories（CSR）に資材を配置**
-
-### **1. CSR に Git レポジトリを作成**
-
-今回利用しているソースコードを配置するためのプライベート Git リポジトリを、Cloud Source Repository（CSR）に作成します。
-
-```bash
-gcloud source repos create cloudrun-handson
-```
-
-### **2. CSR を Git のリポジトリと紐付け**
-
-CSR を Git のリモートレポジトリとして登録します。
-これで git コマンドを使い Cloud Shell 上にあるファイル群を管理することができます。
-
-```bash
-git remote add google https://source.developers.google.com/p/${PROJECT_ID}/r/cloudrun-handson
-```
-
-### **3. CSR への資材の転送（プッシュ）**
-
-以前の手順で作成した CSR は空の状態です。
-今まで修正していた内容をコミット、確定し、git push コマンドを使い、CSR に資材を転送（プッシュ）します。
-
-```bash
-git add . && git commit -m "Fix a message for sumservice" && git push google main
-```
-
-<walkthrough-footnote>Cloud Shell 上にある資材を CSR のリポジトリにプッシュしました。次にこのリポジトリを参照先として、Cloud Run をデプロイします。</walkthrough-footnote>
-
-## **Cloud Run の CI / CD 設定**
-
-Cloud Run の CI / CD 設定は GUI から行います。
-
-### **1. Cloud Run GUI に移動**
-
-下記のように GUI を操作し Cloud Run の管理画面を開きます。
-
-<walkthrough-spotlight-pointer spotlightId="console-nav-menu">ナビゲーションメニュー</walkthrough-spotlight-pointer> -> サーバーレス -> Cloud Run
-
-### **2. サービスの作成を開始**
-
-<walkthrough-spotlight-pointer spotlightId="run-create-service">サービスの作成</walkthrough-spotlight-pointer> ボタンをクリックし作成を開始します。
-
-### **3. サービスの設定** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/create_a_cloudrun_service.png?raw=true)
-
-1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
-1. サービス名に `sumservice` と入力します
-1. リージョンは `asia-northeast1 (東京)` を選択します
-1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
-
-### **4. Cloud Build の設定** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_source_repository.png?raw=true) [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_build.png?raw=true)
-
-1. リポジトリ プロバイダで `Cloud Source Repositories` を選択します
-1. リポジトリで `cloudrun-handson` を選択します
-1. `次へ` ボタンをクリックします
-1. ブランチで `^main$` が選択されていることを確認します
-1. Build Type で `Dockerfile` をチェックします
-1. ソースの場所に `/src/sumservice/Dockerfile` と入力します
-1. `保存` ボタンをクリックします
-
-### **5. サービスの作成** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/create_service.png?raw=true)
-
-1. 下部にスクロールし認証の項目で `未認証の呼び出しを許可` をチェックします
-1. `作成` ボタンをクリックします
-
-`継続的デプロイを設定しています` の処理が終わるまで待ちます。
-
-デプロイが完了するまでに数分時間がかかります。完了すると自動的に画面がリロードされます。
-
-### **6. 動作確認** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/access_deployed_service.png?raw=true)
-
-GUI に表示されている URL のリンクをクリックし、`Hello Challenger11!` と表示されていれば成功です。
-
-<walkthrough-footnote>これで Cloud Run と Git リポジトリを紐付けて、ソースコードの変更から Cloud Run へのデプロイを自動化することができました。次にこのパイプラインの動作を確認します。</walkthrough-footnote>
-
-## **CI / CD パイプラインの動作確認**
-
-### **1. アプリケーションの修正**
-
-`Hello Challenger11!` と修正していたメッセージを `Hello Challener01!` に戻します。
-
-```bash
-sed -i -e 's/Challenger[0-9]*/Challenger01/' src/sumservice/main.py
-```
-
-### **2. リポジトリへのプッシュ**
-
-```bash
-git add . && git commit -m "Update the message to test CI/CD deployment" && git push google main
-```
-
-### **3. ビルド完了まで待機**
-
-```bash
-BUILD_ID=$(gcloud beta builds list --sort-by ~createTime --limit 1 --format json | jq -r '.[].id')
-while true; do gcloud beta builds describe $BUILD_ID --format json | jq -r '.status' | grep SUCCESS && echo 'Build finised :-)' && break; echo 'Waiting to finish the build...'; sleep 5; done
-```
-
-### **4. 動作確認** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/confirm_cicd_pipeline.png?raw=true)
-
-Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello Challenger01!` と表示されていれば成功です。
-
-**ヒント**: GUI から新しいリビジョンがデプロイ完了したことを確認した後に、アクセスしてください。
-
-<walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。ビルドの確認に手間がかかるため、以降はパイプラインを利用せず gcloud コマンドで Cloud Run サービスを操作します。</walkthrough-footnote>
+<walkthrough-footnote>タグ、トラフィックのコントロール機能を使うことで特定の URL でのみリリースする方法を実現しました。次は複数のサービスを Cloud Run でデプロイする方法を学びます。</walkthrough-footnote>
 
 ## **サンプルアプリケーションの拡張**
 
@@ -742,6 +526,14 @@ Cloud Run では様々なセキュリティを向上させるための機能、�
 
 [アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/security.png?raw=true)
 
+### **Autopilot クラスタの作成**
+
+本セクション (セキュリティ) の次のセクションで Cloud Run に負荷をかけてオートスケールを試します。そこで負荷発生ツールを稼働させるための GKE Autopilot をここで事前に作成しておきます。(ハンズオンの時間を有効利用するため)
+
+```bash
+gcloud container clusters create-auto loadtest-asia-northeast1 --region asia-northeast1 --async
+```
+
 ## **サービス個別の権限設定**
 
 デプロイ済みの 2 サービス（sumservice、currencyservice）では権限に関して特別な設定をせずにデプロイしたため、デフォルトのサービスアカウント、つまり広い権限がついている状態です。
@@ -850,27 +642,21 @@ Cloud Run では、負荷に応じて自動的にスケールします。
 
 ここでは Locust を [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview) 上に導入します。
 
-### **1. Autopilot クラスタの作成**
+### **1. Autopilot クラスタが作成完了しているかを確認**
+
+Autopilot クラスタの作成コマンドは事前に実行しています。
 
 ```bash
-gcloud container clusters create-auto loadtest-asia-northeast1 --region asia-northeast1 --async
+gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' 
 ```
 
-作成完了まで数分かかります。
-
-### **2. クラスタ作成完了まで待機**
-
-```bash
-while true; do gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' && echo 'Cluster is created :-)' && break; echo 'Waiting for a cluster is created...'; sleep 20; done
-```
-
-### **3. Autopilot クラスタへのアクセス設定**
+### **2. Autopilot クラスタへのアクセス設定**
 
 ```bash
 gcloud container clusters get-credentials loadtest-asia-northeast1 --region asia-northeast1
 ```
 
-### **4. Locust のデプロイ**
+### **3. Locust のデプロイ**
 
 Kubernetes 上で動かすため、[helm](https://helm.sh/ja/) を使い Locust を導入します。
 
@@ -901,7 +687,7 @@ watch -n 5 kubectl get pods
 
 3 分程度時間がかかります。
 
-### **5. Web UI の確認**
+### **4. Web UI の確認**
 
 Locust にはポートフォワードを通して UI にアクセスします。Cloud Shell への 8080 ポートへのアクセスを、Locust のポート 8089 に転送する設定を行います。
 
@@ -935,25 +721,13 @@ Locust の UI にて下記の数値を入力後、`Start swarming` をクリッ�
 - [sumservice UI](https://console.cloud.google.com/run/detail/asia-northeast1/sumservice/metrics)
 - [currencyservice UI](https://console.cloud.google.com/run/detail/asia-northeast1/currencyservice/metrics)
 
-## **チャレンジ問題：設定値を修正し、挙動の確認**
-
-Cloud Run では、パフォーマンスをチューニングするための様々な設定があります。それらを変更し、より高いパフォーマンスが出せるか試してみてください。
-
-下記のページを参考にしましょう。
-
-- [メモリ上限の構成](https://cloud.google.com/run/docs/configuring/memory-limits)
-- [CPU の割り当て](https://cloud.google.com/run/docs/configuring/cpu)
-- [最大同時実行の設定](https://cloud.google.com/run/docs/configuring/concurrency)
-
-**注**: 参考ページにそれぞれ手順が記載されていますが、**コマンドライン** での実行手順を用いてください。Console (GUI) から設定変更を行うと、前の手順で行ったサービスアカウント設定がリセットされてしまいます。
-
 **完了後、Locust からの負荷テストは止めましょう。Locust UI のメニュー内の STOP ボタンをクリックします。またターミナルでは port-forward を Ctrl-C で終了します。**
 
 <walkthrough-footnote>負荷ツールを利用し、Cloud Run に負荷をかけ、UI から挙動を確認しました。次に展開しているマイクロサービスをグローバルに展開する方法を学びます。</walkthrough-footnote>
 
 ## **サンプルアプリケーションのグローバル展開**
 
-<walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
+<walkthrough-tutorial-duration duration=10></walkthrough-tutorial-duration>
 
 Cloud Run は Load balancer と組み合わせることで、簡単にアプリケーションをグローバルで展開することが可能です。
 
@@ -1008,7 +782,7 @@ bash scripts/setup_loadbalancer.sh
 
 ## **アメリカ（us-central1）にアプリケーションをデプロイ**
 
-アメリカにも sumservice、currencyservice をデプロイしましょう。ここでは簡略化のため、パイプラインを通じてではなく、マニュアルでデプロイします。
+アメリカにも sumservice、currencyservice をデプロイしましょう。
 
 ### **1. currencyservice のデプロイ**
 
@@ -1072,7 +846,7 @@ bash scripts/add_sumservice_to_backend.sh us-central1
 
 ```bash
 LB_IP=$(gcloud compute addresses describe --global sumservice-ip --format='value(address)')
-curl -s -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' https://${LB_IP}/sum
+curl -s -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 100]}' https://${LB_IP}/sum | jq
 curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency | jq
 ```
 
@@ -1150,7 +924,7 @@ curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
-これにて Cloud Run を利用したアプリケーションのデプロイ、継続的デプロイ設定を使ったサービスの作成、セキュリティ向上策の導入、パフォーマンス・チューニング、そしてロードバランサを使ったグローバル展開が完了しました。
+これにて Cloud Run を利用したアプリケーションのデプロイ、セキュリティ向上策の導入、パフォーマンス・チューニング、そしてロードバランサを使ったグローバル展開が完了しました。
 
 デモで使った資材が不要な方は、次の手順でクリーンアップを行って下さい。
 
