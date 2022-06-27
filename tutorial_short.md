@@ -4,6 +4,7 @@
 
 本ハンズオンではコンテナをサーバーレスで動かすサービスである [Cloud Run](https://cloud.google.com/run) の様々な機能を体験します。
 
+- Dockerfile、ソースコードから 1 コマンドで Cloud Run にデプロイ
 - カナリアリリース、プライベートリリース (タグをつけたリリース) などのトラフィック コントロール
 - 複数のサービスを Cloud Run で動かし連携させる
 - サービスに負荷をかけ、オートスケーリングを確認
@@ -133,7 +134,7 @@ gcloud services enable artifactregistry.googleapis.com run.googleapis.com cloudb
 
 Cloud Run では様々な方法でデプロイが可能です。ここでは基本的な以下の方法でアプリケーションをデプロイします。　
 
-- Dockerfile を使い、ローカルでコンテナを作成、レジストリにプッシュしてからデプロイ
+- Dockerfile、ソースコードから 1 コマンドで Cloud Run にデプロイ
 
 <walkthrough-footnote>まず、本ハンズオンで利用するサンプルアプリケーションを見てみましょう。</walkthrough-footnote>
 
@@ -189,11 +190,11 @@ Response:
 
 <walkthrough-footnote>次に実際にアプリケーションを Cloud Run にデプロイします。</walkthrough-footnote>
 
-## **Dockerfile を使い、ローカルでコンテナを作成、レジストリにプッシュしてからデプロイ**
+## **Dockerfile、ソースコードから 1 コマンドで Cloud Run にデプロイ**
 
-[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/step_by_step_deployment.png?raw=true)
+[アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/single_step_deployment_with_dockerfile.png?raw=true)
 
-### **準備**
+### **1. 準備**
 
 下記のように GUI を操作し Cloud Run の管理画面を開いておきましょう。
 
@@ -201,39 +202,15 @@ Response:
 
 また以降の手順で Cloud Run の管理画面は何度も開くことになるため、ピン留め (Cloud Run メニューにマウスオーバーし、ピンのアイコンをクリック) しておくと便利です。
 
-### **1. リポジトリを作成（Artifact Registry）**
+### **2. Cloud Run に sumservice をデプロイ**
 
 ```bash
-gcloud artifacts repositories create cloudrun-handson --repository-format=docker --location=asia-northeast1 --description="Docker repository for Cloud Run hands-on"
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
 ```
 
-### **2. docker コマンドの認証設定**
+ソースコードからの初回の一括デプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
 
-```bash
-gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
-```
-
-### **3. ローカル（Cloud Shell 上）にコンテナを作成**
-
-```bash
-(cd src/sumservice && docker build -t asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloudrun-handson/sumservice:v1 .)
-```
-
-**ヒント**: カレントディレクトリを変えずに実行するために、カッコでくくっています。またコマンドの出力で赤字で `WARNING` が出力されますが、こちらは問題ありません。コンテナを作成するときに `Dockerfile` 内で `pip` コマンドを `root` ユーザで実行しているためです。コンテナの中で専用ユーザを作るなどで対応できますが、本質ではないので入れていません。
-
-### **4. 作成したコンテナをコンテナレジストリ（Artifact Registry）へ登録（プッシュ）する**
-
-```bash
-docker push asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloudrun-handson/sumservice:v1
-```
-
-### **5. Cloud Run にデプロイ**
-
-```bash
-gcloud run deploy sumservice --image=asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloudrun-handson/sumservice:v1 --allow-unauthenticated
-```
-
-### **6. 動作確認**
+### **3. 動作確認**
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
@@ -248,7 +225,7 @@ curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 10
 }
 ```
 
-<walkthrough-footnote>コンテナレジストリ、コンテナの作成、プッシュなど一つ一つの手順をマニュアルで実行し、Cloud Run にデプロイすることができました。次に、Cloud Run のトラフィック コントロールを試します。</walkthrough-footnote>
+<walkthrough-footnote>Dockerfile、ソースコードを 1 コマンドで簡単に Cloud Run にデプロイすることができました。次に、Cloud Run のトラフィック コントロールを試します。</walkthrough-footnote>
 
 ## **様々なリリース構成、トラフィックのコントロール**
 
