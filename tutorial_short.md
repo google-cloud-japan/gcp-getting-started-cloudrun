@@ -729,18 +729,8 @@ Cloud Run は Load balancer と組み合わせることで、簡単にアプリ�
 HTTPS ロードバランサに SSL 証明書を紐付ける必要があります。そのためにまず自己署名証明書を作成します。
 
 ```bash
-bash scripts/create_self-cert.sh
+bash scripts/create_self-cert_auto.sh
 ```
-
-それぞれ質問された項目に、値を入力します。（下記はサンプルです。）
-
-- Country Name: JP
-- State or Province Name: Tokyo
-- Locality Name: Minato
-- Organization Name: Sugoi Cloud G.K.
-- Organizational Unit Name: Cloud
-- Common Name: sugoicloud.com
-- Email Address: admin@sugoicloud.com
 
 カレントディレクトリに以下の 2 ファイルが作成されます。
 
