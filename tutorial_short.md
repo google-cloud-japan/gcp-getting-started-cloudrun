@@ -205,12 +205,12 @@ Response:
 ### **2. Cloud Run に sumservice をデプロイ**
 
 ```bash
-gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --quiet
 ```
 
-ソースコードからの初回の一括デプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
-
 ### **3. 動作確認**
+
+10, 20, 30, 300, 100 の足し算をリクエストしています。
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
@@ -271,8 +271,6 @@ sed -i -e "s/Challenger[0-9]*/Challenger10/" src/sumservice/main.py
 ```bash
 gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --no-traffic
 ```
-
-ソースコードからの初回一括デプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
 
 **ヒント**: 新リビジョンにトラフィックを流さないよう、`--no-traffic` のオプションをつけています。これがない場合、デプロイされた瞬間にすべてのトラフィックが新リビジョンに流れます。
 
@@ -360,7 +358,7 @@ Response:
 
 ```json
 {
-  "sum": 6184
+  "sum": 7005
 }
 ```
 
@@ -389,7 +387,7 @@ Response:
 
 ```json
 {
-  "answer": 1098
+  "answer": 1369
 }
 ```
 
@@ -423,6 +421,8 @@ gcloud run deploy currencyservice --source src/currencyservice/ --allow-unauthen
 
 ### **3. 動作確認**
 
+USD $10 を日本円に換算するリクエストを送ります。
+
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
 curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert | jq
@@ -432,7 +432,7 @@ curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY
 
 ```terminal
 {
-  "answer": 1219
+  "answer": 1369
 }
 ```
 
@@ -485,7 +485,7 @@ curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", 
 
 ```terminal
 {
-  "sum": 6673
+  "sum": 6949
 }
 ```
 
@@ -523,9 +523,6 @@ sumservice, currecyservice それぞれ固有のサービスアカウントを�
 
 ```bash
 gcloud iam service-accounts create sumservice-sa --display-name "Service Account for sumservice"
-```
-
-```bash
 gcloud iam service-accounts create currencyservice-sa --display-name "Service Account for currencyservice"
 ```
 
@@ -535,9 +532,6 @@ gcloud iam service-accounts create currencyservice-sa --display-name "Service Ac
 
 ```bash
 gcloud run services update sumservice --service-account=sumservice-sa
-```
-
-```bash
 gcloud run services update currencyservice --service-account=currencyservice-sa
 ```
 
@@ -599,7 +593,7 @@ curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY
 
 <walkthrough-footnote>これで sumservice、currencyservice はそれぞれ最小の権限のみで稼働し、さらにマイクロサービス群がセキュアに連携できるようになりました。次に Cloud Run のパフォーマンスについて学びましょう。</walkthrough-footnote>
 
-## **パフォーマンス・チューニング**
+## **オートスケーリング**
 
 <walkthrough-tutorial-duration duration=15></walkthrough-tutorial-duration>
 
@@ -621,10 +615,10 @@ Cloud Run では、負荷に応じて自動的にスケールします。
 
 ### **1. Autopilot クラスタが作成完了しているかを確認**
 
-Autopilot クラスタの作成コマンドは事前に実行しています。
+Autopilot クラスタの作成コマンドは事前に実行しています。出力結果が `RUNNING` になっていることを確認します。
 
 ```bash
-gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' 
+gcloud container clusters list --format json | jq -r '.[].status'
 ```
 
 ### **2. Autopilot クラスタへのアクセス設定**
@@ -754,10 +748,8 @@ bash scripts/setup_loadbalancer.sh
 ### **1. currencyservice のデプロイ**
 
 ```bash
-gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@${PROJECT_ID}.iam.gserviceaccount.com --quiet
 ```
-
-us-central1 リージョンでソースからの初めてのデプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
 
 ### **2. sumservice からのアクセス許可設定**
 
@@ -768,17 +760,11 @@ gcloud run services add-iam-policy-binding currencyservice --member="serviceAcco
 ### **3. sumservice のデプロイ**
 
 ```bash
-gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@${PROJECT_ID}.iam.gserviceaccount.com
-```
-
-### **4. sumservice へ currencyservice の URL を設定**
-
-```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json --region us-central1 | jq -r '.status.address.url')
-gcloud run services update sumservice --set-env-vars=CURRENCY_SERVICE_URL=${CURRENCY_URL} --region us-central1
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@${PROJECT_ID}.iam.gserviceaccount.com --set-env-vars=CURRENCY_SERVICE_URL=${CURRENCY_URL}
 ```
 
-### **5. 動作確認**
+### **4. 動作確認**
 
 sumservice 単体の API: /sum
 
@@ -817,7 +803,7 @@ curl -s -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300,
 curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency | jq
 ```
 
-エラーが返ってくる場合は、少し待ってみてから再度アクセスをしてみてください。
+ロードバランサは設定が完了するまで数分時間がかかります。エラーが返ってくる場合は、少し待ってみてから再度アクセスをしてみてください。
 
 <walkthrough-footnote>ロードバランサに Cloud Run を連携させることができました。これで日本、アメリカそれぞれの利用者が高いユーザ体験を得ることが可能です。次に、ロードバランサを使った、より本番で必要になる設定を導入します。</walkthrough-footnote>
 
@@ -849,15 +835,8 @@ curl -s -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300, 10
 
 オプションの `--ingress internal-and-cloud-load-balancing` がポイントです。
 
-東京の sumservice:
-
 ```bash
 gcloud run services update sumservice --ingress internal-and-cloud-load-balancing --region asia-northeast1
-```
-
-アメリカの sumservice:
-
-```bash
 gcloud run services update sumservice --ingress internal-and-cloud-load-balancing --region us-central1
 ```
 
@@ -891,7 +870,7 @@ curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
-これにて Cloud Run を利用したアプリケーションのデプロイ、セキュリティ向上策の導入、パフォーマンス・チューニング、そしてロードバランサを使ったグローバル展開が完了しました。
+これにて Cloud Run を利用したアプリケーションのデプロイ、セキュリティ向上策の導入、オートスケーリングの確認、そしてロードバランサを使ったグローバル展開が完了しました。
 
 デモで使った資材が不要な方は、次の手順でクリーンアップを行って下さい。
 
