@@ -30,7 +30,7 @@ export PROJECT_ID=[PROJECT_ID]
 gcloud beta billing projects describe ${PROJECT_ID} | grep billingEnabled
 ```
 
-Authorize Cloud Shell という確認メッセージが出た場合は `Authorize` をクリックします。
+**Cloud Shell の承認** という確認メッセージが出た場合は **承認** をクリックします。
 
 出力結果の `billingEnabled` が **true** になっていることを確認してください。**false** の場合は、こちらのプロジェクトではハンズオンが進められません。別途、課金を有効化したプロジェクトを用意し、本ページの #1 の手順からやり直してください。
 
@@ -237,6 +237,8 @@ gcloud run deploy sumservice --image=asia-northeast1-docker.pkg.dev/${PROJECT_ID
 ```
 
 ### **6. 動作確認**
+
+10, 20, 30, 300, 100 の足し算をリクエストしています。
 
 ```bash
 SUM_URL=$(gcloud run services describe sumservice --format json | jq -r '.status.address.url')
@@ -512,7 +514,7 @@ Cloud Run の CI / CD 設定は GUI から行います。
 1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
 1. サービス名に `sumservice` と入力します
 1. リージョンは `asia-northeast1 (東京)` を選択します
-1. `SET UP WITH CLOUD BUILD` ボタンをクリックします
+1. `CLOUD BUILD の設定` ボタンをクリックします
 
 ### **4. Cloud Build の設定** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_source_repository.png?raw=true) [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_build.png?raw=true)
 
@@ -662,6 +664,8 @@ gcloud run deploy currencyservice --source src/currencyservice/ --allow-unauthen
 
 ### **3. 動作確認**
 
+USD $10 を日本円に換算するリクエストを送ります。
+
 ```bash
 CURRENCY_URL=$(gcloud run services describe currencyservice --format json | jq -r '.status.address.url')
 curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY_URL}/convert | jq
@@ -671,7 +675,7 @@ curl -s -H "Content-Type: application/json" -d '{ "value": "USD10" }' ${CURRENCY
 
 ```terminal
 {
-  "answer": 1219
+  "answer": 1369
 }
 ```
 
@@ -724,7 +728,7 @@ curl -s -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", 
 
 ```terminal
 {
-  "sum": 6673
+  "sum": 6949
 }
 ```
 
@@ -1076,7 +1080,7 @@ curl -s -k -H "Content-Type: application/json" -d '{"numbers": [10, 20, 30, 300,
 curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20", "AUD30"] }' https://${LB_IP}/sumcurrency | jq
 ```
 
-エラーが返ってくる場合は、少し待ってみてから再度アクセスをしてみてください。
+ロードバランサは設定が完了するまで数分時間がかかります。エラーが返ってくる場合は、少し待ってみてから再度アクセスをしてみてください。
 
 <walkthrough-footnote>ロードバランサに Cloud Run を連携させることができました。これで日本、アメリカそれぞれの利用者が高いユーザ体験を得ることが可能です。次に、ロードバランサを使った、より本番で必要になる設定を導入します。</walkthrough-footnote>
 
