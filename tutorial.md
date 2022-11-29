@@ -746,6 +746,14 @@ Cloud Run では様々なセキュリティを向上させるための機能、�
 
 [アーキテクチャ図](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/security.png?raw=true)
 
+### **Autopilot クラスタの作成**
+
+本セクション (セキュリティ) の次のセクションで Cloud Run に負荷をかけてオートスケールを試します。そこで負荷発生ツールを稼働させるための GKE Autopilot をここで事前に作成しておきます。(ハンズオンの時間を有効利用するため)
+
+```bash
+gcloud container clusters create-auto loadtest-asia-northeast1 --region asia-northeast1 --async
+```
+
 ## **サービス個別の権限設定**
 
 デプロイ済みの 2 サービス（sumservice、currencyservice）では権限に関して特別な設定をせずにデプロイしたため、デフォルトのサービスアカウント、つまり広い権限がついている状態です。
@@ -854,27 +862,21 @@ Cloud Run では、負荷に応じて自動的にスケールします。
 
 ここでは Locust を [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview) 上に導入します。
 
-### **1. Autopilot クラスタの作成**
+### **1. Autopilot クラスタが作成完了しているかを確認**
+
+Autopilot クラスタの作成コマンドは事前に実行しています。出力結果が `RUNNING` になっていることを確認します。
 
 ```bash
-gcloud container clusters create-auto loadtest-asia-northeast1 --region asia-northeast1 --async
+gcloud container clusters list --format json | jq -r '.[].status'
 ```
 
-作成完了まで数分かかります。
-
-### **2. クラスタ作成完了まで待機**
-
-```bash
-while true; do gcloud container clusters list --format json | jq -r '.[].status' | grep 'RUNNING' && echo 'Cluster is created :-)' && break; echo 'Waiting for a cluster is created...'; sleep 20; done
-```
-
-### **3. Autopilot クラスタへのアクセス設定**
+### **2. Autopilot クラスタへのアクセス設定**
 
 ```bash
 gcloud container clusters get-credentials loadtest-asia-northeast1 --region asia-northeast1
 ```
 
-### **4. Locust のデプロイ**
+### **3. Locust のデプロイ**
 
 Kubernetes 上で動かすため、[helm](https://helm.sh/ja/) を使い Locust を導入します。
 
@@ -905,7 +907,7 @@ watch -n 5 kubectl get pods
 
 3 分程度時間がかかります。
 
-### **5. Web UI の確認**
+### **4. Web UI の確認**
 
 Locust にはポートフォワードを通して UI にアクセスします。Cloud Shell への 8080 ポートへのアクセスを、Locust のポート 8089 に転送する設定を行います。
 
