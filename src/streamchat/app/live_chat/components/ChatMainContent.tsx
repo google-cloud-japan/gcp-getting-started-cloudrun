@@ -1,6 +1,6 @@
 "use client";
 
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { firestore } from "../../libs/firebase/init";
 import Image from "next/image";
@@ -28,7 +28,7 @@ const ChatMainContent = () => {
   }, [snapshot]);
 
   return (
-    <main className="bg-white overflow-auto">
+    <main className="bg-white dark:bg-black overflow-auto">
       <div className="mt-8">
         {snapshot && (
           <div>
@@ -48,10 +48,10 @@ const ChatMainContent = () => {
                         alt="Avatar"
                       />
                     </div>
-                    <span className="text-[13px] font-medium text-black text-opacity-50">
+                    <span className="text-[13px] font-medium text-black dark:text-white text-opacity-50 dark:text-opacity-70">
                       {doc.data().name}
                     </span>
-                    <span className="ml-2 text-[13px] text-black">
+                    <span className="ml-2 text-[13px] text-black dark:text-white">
                       {doc.data().text}
                     </span>
                   </div>
