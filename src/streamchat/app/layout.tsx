@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import AuthContext from "./context/AuthContext";
 import ToasterContext from "./context/ToasterContext";
+import Providers from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,10 +19,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthContext>
-          <ToasterContext />
-          {children}
-        </AuthContext>
+        <Providers>
+          <AuthContext>
+            <ToasterContext />
+            {children}
+          </AuthContext>
+        </Providers>
       </body>
     </html>
   );

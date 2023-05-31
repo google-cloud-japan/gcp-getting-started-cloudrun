@@ -115,6 +115,7 @@ const AuthForm = () => {
       <div
         className="
         bg-white
+        dark:bg-gray-900
           px-4
           py-8
           shadow
@@ -168,10 +169,12 @@ const AuthForm = () => {
                 items-center
               "
             >
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-black">Or continue with</span>
+              <span className="bg-white dark:bg-gray-900 px-2 text-black dark:text-gray-300">
+                Or continue with
+              </span>
             </div>
           </div>
 
@@ -192,14 +195,14 @@ const AuthForm = () => {
             px-2 
           "
         >
-          <div className="text-black rk:text-gray-300">
+          <div className="text-black dark:text-gray-300">
             {variant === "LOGIN"
               ? "New to Stream Chat?"
               : "Already have an account?"}
           </div>
           <div
             onClick={toggleVariant}
-            className="underline cursor-pointer text-black"
+            className="underline cursor-pointer text-black dark:text-gray-300"
           >
             {variant === "LOGIN" ? "Create an account" : "Login"}
           </div>
