@@ -193,7 +193,9 @@ firebase init firestore -P $PROJECT_ID
 
 ### **3. セキュリティルール設定ファイルを上書き**
 
-```bash
+**注**: 以下のコマンドはコピー&ペーストで実行してください。
+
+```shell
 cat << EOF > firestore.rules
 rules_version = '2';
 service cloud.firestore {
@@ -463,7 +465,7 @@ gcloud run services add-iam-policy-binding banchecker --member serviceAccount:su
 
 ```bash
 CHECKER_URL=$(gcloud run services describe banchecker --format json | jq -r '.status.address.url')
-gcloud pubsub subscriptions create sub-to-banchecker --topic streamchat --push-endpoint $CHECKER_URL --push-auth-service-account sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com --enable-exactly-once-delivery
+gcloud pubsub subscriptions create sub-to-banchecker --topic streamchat --push-endpoint $CHECKER_URL --push-auth-service-account sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
 ## **チャットアプリケーションの更新**
@@ -480,7 +482,9 @@ git checkout banchecker-integration
 
 ### **2. Firebase インデックス設定ファイルの上書き**
 
-```bash
+**注**: 以下のコマンドはコピー&ペーストで実行してください。
+
+```shell
 cat << EOF > firestore.indexes.json
 {
   "indexes": [
