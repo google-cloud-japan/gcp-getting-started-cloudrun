@@ -31,7 +31,7 @@ const ChatFooter = () => {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setIsLoading(true);
     try {
-      await axios.post("/api/messages", data);
+      await axios.post("/api/pubsub", data);
       reset();
     } catch (error) {
       toast.error("Failed to send message: " + error);

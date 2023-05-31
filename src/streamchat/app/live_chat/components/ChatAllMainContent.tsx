@@ -1,16 +1,15 @@
 "use client";
 
-import { collection, query, orderBy, limit, where } from "firebase/firestore";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { firestore } from "../../libs/firebase/init";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 
-const ChatMainContent = () => {
+const ChatAllMainContent = () => {
   const [snapshot, loading, error] = useCollection(
     query(
       collection(firestore, "messages"),
-      where("banned", "==", false),
       orderBy("timestamp", "desc"),
       limit(100)
     ),
@@ -67,4 +66,4 @@ const ChatMainContent = () => {
   );
 };
 
-export default ChatMainContent;
+export default ChatAllMainContent;
