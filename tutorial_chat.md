@@ -161,6 +161,34 @@ gcloud logging sinks create run-analytics-sink logging.googleapis.com/projects/$
 firebase projects:addfirebase $PROJECT_ID
 ```
 
+Firebase を初めて利用する場合は以下のようなエラーが出力され、コマンドが失敗してしまいます。
+
+```
+✖ Adding Firebase resources to Google Cloud Platform project
+
+Error: Failed to add Firebase to Google Cloud Platform project. See firebase-debug.log for more info.
+```
+
+この場合は以下の手順で GUI から Firebase を有効化します。
+
+1. [Firebase コンソール](https://console.firebase.google.com/) にブラウザからアクセスします。
+1. `プロジェクトを作成` ボタンをクリックします。
+1. プロジェクトの作成 (手順 1/3)
+
+   `プロジェクト名を入力` のところから作成済みの Google Cloud プロジェクトを選択します。次に 規約への同意、利用目的のチェックマークを入れ、`続行` をクリックします。
+
+   料金確認画面が表示された場合は、`プランを確認` ボタンをクリックします。
+
+1. プロジェクトの作成 (手順 2/4)
+
+   `続行` をクリックします。
+
+1. プロジェクトの作成 (手順 3/3)
+
+   `このプロジェクトで Google アナリティクスを有効にする` をオフにし、`Firebase を追加` をクリックします。
+
+1. `新しいプロジェクトの準備ができました` と表示されたら `続行` をクリックします。
+
 ### **2. Firebase アプリケーションの作成**
 
 ```bash
@@ -189,7 +217,7 @@ gcloud firestore databases create --location asia-northeast1
 firebase init firestore -P $PROJECT_ID
 ```
 
-2 つプロンプトが出ますが両方とも Enter を押しデフォルト設定を採用します。
+2 つプロンプトが出ますが両方とも `Enter` を押しデフォルト設定を採用します。
 
 ### **3. セキュリティルール設定ファイルを上書き**
 
@@ -236,15 +264,20 @@ gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello 
 
 1. `User Type` は `外部` にチェックを入れ、`作成` ボタンをクリックします。
 1. アプリ情報 -> アプリ名 に `streamchat` と入力します。
+
+   ```shell
+   streamchat
+   ```
+
 1. ユーザー サポートメール は選択式です。自分のメールアドレスを選択します。
 1. 最下部の デベロッパーの連絡先情報 に自分のメールアドレスを入力します。
 1. 下にある `保存して次へ` ボタンをクリックします。
 
 上記以外は未入力で大丈夫です。
 
-### **3. スコープ、省略可能な情報、概要**
+### **3. スコープ、テストユーザー、概要**
 
-スコープ、省略可能な情報 のページは何も入力せずに、下部にある `保存して次へ` ボタンをクリックします。
+スコープ、テストユーザー のページは何も入力せずに、下部にある `保存して次へ` ボタンをクリックします。
 
 概要ページでは最下部の `ダッシュボードに戻る` ボタンをクリックします。
 
@@ -258,7 +291,12 @@ gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello 
 
 1. 上のメニューにある `+ 認証情報を作成` をクリックし、`OAuth クライアント ID` をクリックします。
 1. `アプリケーションの種類` で `ウェブ アプリケーション` を選択します。
-1. `名前` に `streamchat` と入力します。
+1. `名前` を `streamchat` に置き換えます。
+
+   ```shell
+   streamchat
+   ```
+
 1. `承認済みの JavaScript 生成元` には以下のコマンドで出力された URL を追加します。
 
    ```bash
@@ -285,7 +323,7 @@ gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello 
 ./scripts/credentials.sh
 ```
 
-実行例 (前の短い引数がクライアント シークレット、後ろの長い方がクライアント ID です)
+**実行例** (前の短い引数がクライアント シークレット、後ろの長い方がクライアント ID です)
 
 ```
 ./scripts/credentials.sh xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 444444444444-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
@@ -298,16 +336,6 @@ gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello 
 ```
 
 このコマンドで表示される設定ファイルのそれぞれの値に、すべて値が入っていることを確認します。
-
-## **BigQuery (Log Analytics) の設定 (ログシンク)**
-
-後ほど Log Analytics を利用して、ログを分析します。できる限り多くのログを集めておくために、ここで Cloud Run のログを送るためのログシンクを作成します。
-
-### **1. ログシンクの作成**
-
-```bash
-gcloud logging sinks create run-analytics-sink logging.googleapis.com/projects/$PROJECT_ID/locations/asia-northeast1/buckets/run-analytics-bucket --log-filter 'logName="run.googleapis.com"'
-```
 
 ## **チャット アプリケーションのデプロイ**
 
@@ -331,7 +359,7 @@ gcloud iam service-accounts create streamchat
 gcloud run deploy streamchat --source ./src/streamchat --allow-unauthenticated --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
-リポジトリを作成するか聞かれた場合は、そのまま Enter を押し作成するようにしてください。
+リポジトリを作成するか聞かれた場合は、そのまま `Enter` を押し作成するようにしてください。
 
 **注**: デプロイ完了まで最大 10 分程度かかります。
 
@@ -371,10 +399,10 @@ Chrome の通常ウィンドウ、プライベートウィンドウそれぞれ�
 
 ### **1. ダークモード機能の追加**
 
-ダークモード機能は別の Git ブランチに実装済みです。そちらにブランチを切り替えます。
+ダークモード機能は `darkmode` という別の Git ブランチに実装済みです。そちらにブランチを切り替えます。
 
 ```bash
-git checkout darkmode
+git switch darkmode
 ```
 
 ### **2. ダークモードの限定リリース**
@@ -429,7 +457,7 @@ gcloud pubsub topics create streamchat
 gcloud pubsub topics add-iam-policy-binding streamchat --member serviceAccount:streamchat@$PROJECT_ID.iam.gserviceaccount.com --role 'roles/pubsub.publisher'
 ```
 
-## **禁止用語判定サービスのデプロイ、Pub/Sub との接続**
+## **禁止用語判定サービスのデプロイ**
 
 ### **1. 放送禁止判定サービス用のサービスアカウントを作成**
 
@@ -449,19 +477,21 @@ gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:banch
 gcloud run deploy banchecker --source ./src/banchecker --no-allow-unauthenticated --service-account banchecker@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
-### **4. Pub/Sub 用のサービスアカウントを作成**
+## **Pub/Sub からの連携設定**
+
+### **1. Pub/Sub 用のサービスアカウントを作成**
 
 ```bash
 gcloud iam service-accounts create sub-to-banchecker
 ```
 
-### **5. Pub/Sub 用のサービスアカウントへの権限設定**
+### **2. Pub/Sub 用のサービスアカウントへの権限設定**
 
 ```bash
 gcloud run services add-iam-policy-binding banchecker --member serviceAccount:sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com --role 'roles/run.invoker'
 ```
 
-### **6. Pub/Sub から判定サービスへのトリガー設定**
+### **3. Pub/Sub から判定サービスへのトリガー設定**
 
 ```bash
 CHECKER_URL=$(gcloud run services describe banchecker --format json | jq -r '.status.address.url')
@@ -477,7 +507,7 @@ gcloud pubsub subscriptions create sub-to-banchecker --topic streamchat --push-e
 ### **1. 放送禁止用語判定サービスとの連携機能追加**
 
 ```bash
-git checkout banchecker-integration
+git switch banchecker-integration
 ```
 
 ### **2. Firebase インデックス設定ファイルの上書き**
