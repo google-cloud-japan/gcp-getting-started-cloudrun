@@ -20,10 +20,10 @@ BigQuery
 
 ### **1. 対象の Google Cloud プロジェクトを設定**
 
-ハンズオンを行う Google Cloud プロジェクトのプロジェクト ID を環境変数に設定し、以降の手順で利用できるようにします。 (右辺の [PROJECT_ID] を手動で置き換えてコマンドを実行します)
+ハンズオンを行う Google Cloud プロジェクトのプロジェクト ID を環境変数に設定し、以降の手順で利用できるようにします。 (右辺の `test-project` を手動で置き換えてコマンドを実行します)
 
 ```bash
-export PROJECT_ID=[PROJECT_ID]
+export PROJECT_ID=test-project
 ```
 
 `プロジェクト ID` は [ダッシュボード](https://console.cloud.google.com/home/dashboard) に進み、左上の **プロジェクト情報** から確認します。
@@ -31,7 +31,7 @@ export PROJECT_ID=[PROJECT_ID]
 ### **2. プロジェクトの課金が有効化されていることを確認する**
 
 ```bash
-gcloud beta billing projects describe ${PROJECT_ID} | grep billingEnabled
+gcloud beta billing projects describe $PROJECT_ID | grep billingEnabled
 ```
 
 **Cloud Shell の承認** という確認メッセージが出た場合は **承認** をクリックします。
@@ -59,7 +59,6 @@ gcloud コマンドライン インターフェースは、Google Cloud でメ�
 
 たとえば、gcloud CLI を使用して、以下のようなものを作成、管理できます。
 
-- Google Compute Engine 仮想マシン
 - Google Kubernetes Engine クラスタ
 - Google Cloud SQL インスタンス
 
@@ -70,7 +69,7 @@ gcloud コマンドライン インターフェースは、Google Cloud でメ�
 gcloud コマンドでは操作の対象とするプロジェクトの設定が必要です。操作対象のプロジェクトを設定します。
 
 ```bash
-gcloud config set project ${PROJECT_ID}
+gcloud config set project $PROJECT_ID
 ```
 
 承認するかどうかを聞かれるメッセージがでた場合は、`承認` ボタンをクリックします。
@@ -106,14 +105,16 @@ teachme tutorial_chat.md
 
 ### **3. プロジェクト ID を設定する**
 
+`test-project` を実際のプロジェクト ID に更新して実行してください。
+
 ```bash
-export PROJECT_ID=[PROJECT_ID]
+export PROJECT_ID=test-project
 ```
 
 ### **4. gcloud のデフォルト設定**
 
 ```bash
-gcloud config set project ${PROJECT_ID}
+gcloud config set project $PROJECT_ID
 gcloud config set run/region asia-northeast1
 gcloud config set run/platform managed
 ```
@@ -126,7 +127,12 @@ Google Cloud では利用したい機能（API）ごとに、有効化を行う�
 ここでは、以降のハンズオンで利用する機能を事前に有効化しておきます。
 
 ```bash
-gcloud services enable artifactregistry.googleapis.com run.googleapis.com cloudbuild.googleapis.com firestore.googleapis.com pubsub.googleapis.com
+gcloud services enable \
+  run.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  firestore.googleapis.com \
+  pubsub.googleapis.com
 ```
 
 **GUI**: [API ライブラリ](https://console.cloud.google.com/apis/library)
@@ -140,13 +146,19 @@ gcloud services enable artifactregistry.googleapis.com run.googleapis.com cloudb
 ### **1. ログバケットの作成**
 
 ```bash
-gcloud logging buckets create run-analytics-bucket --location asia-northeast1 --enable-analytics --async
+gcloud logging buckets create run-analytics-bucket \
+  --location asia-northeast1 \
+  --enable-analytics
 ```
+
+**注**: 最大 3 分程度時間がかかります。
 
 ### **2. ログシンクの作成**
 
 ```bash
-gcloud logging sinks create run-analytics-sink logging.googleapis.com/projects/$PROJECT_ID/locations/asia-northeast1/buckets/run-analytics-bucket --log-filter 'logName:"run.googleapis.com"'
+gcloud logging sinks create run-analytics-sink \
+  logging.googleapis.com/projects/$PROJECT_ID/locations/asia-northeast1/buckets/run-analytics-bucket \
+  --log-filter 'logName:"run.googleapis.com"'
 ```
 
 ## **Firebase の設定**
@@ -247,7 +259,9 @@ firebase deploy --only firestore:rules -P $PROJECT_ID
 以降の設定で CLoud Run サービスの URL が必要になるため、一旦ダミーでサービスをデプロイします。
 
 ```bash
-gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello --allow-unauthenticated
+gcloud run deploy streamchat \
+  --image us-docker.pkg.dev/cloudrun/container/hello \
+  --allow-unauthenticated
 ```
 
 ## **認証連携の設定 (OAuth 同意画面)**
@@ -275,9 +289,9 @@ gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello 
 
 上記以外は未入力で大丈夫です。
 
-### **3. スコープ、テストユーザー、概要**
+### **3. スコープ、省略可能な情報(or テストユーザー)、概要**
 
-スコープ、テストユーザー のページは何も入力せずに、下部にある `保存して次へ` ボタンをクリックします。
+スコープ、省略可能な情報(or テストユーザー) のページは何も入力せずに、下部にある `保存して次へ` ボタンをクリックします。
 
 概要ページでは最下部の `ダッシュボードに戻る` ボタンをクリックします。
 
@@ -339,11 +353,20 @@ gcloud run deploy streamchat --image us-docker.pkg.dev/cloudrun/container/hello 
 
 ## **チャット アプリケーションのデプロイ**
 
-Cloud Run では様々な方法でデプロイが可能です。ここでは基本的な以下の方法でアプリケーションをデプロイします。
+Cloud Run では様々な方法でデプロイが可能です。ここでは以下の方法でアプリケーションをデプロイします。
 
-- Dockerfile、ソースコードから 1 コマンドで Cloud Run にデプロイ
+- Dockerfile を利用して、Cloud Build でコンテナイメージを作成。作成したコンテナイメージを Cloud Run にデプロイ
 
-### **1. サービスアカウントの作成**
+### **1. Docker リポジトリ (Artifact Registry) の作成**
+
+```bash
+gcloud artifacts repositories create chat-repo \
+  --repository-format docker \
+  --location asia-northeast1 \
+  --description "Docker repository for stream chat"
+```
+
+### **2. サービスアカウントの作成**
 
 デフォルトでは Cloud Run にデプロイされたアプリケーションは強い権限を持ちます。最小権限の原則に従い、必要最小限の権限を持たせるため、まずサービス用のアカウントを作成します。
 
@@ -351,17 +374,21 @@ Cloud Run では様々な方法でデプロイが可能です。ここでは基�
 gcloud iam service-accounts create streamchat
 ```
 
-### **2. チャット アプリケーションのデプロイ**
+### **3. チャット アプリケーションのデプロイ**
 
-1 コマンドで Cloud Run にアプリケーションをデプロイします。
+Cloud Build でコンテナイメージを作成、作成したイメージを Cloud Run にデプロイします。
 
 ```bash
-gcloud run deploy streamchat --source ./src/streamchat --allow-unauthenticated --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com
+gcloud builds submit ./src/streamchat \
+  --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
+  --machine-type e2-highcpu-8 && \
+gcloud run deploy streamchat \
+  --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
+  --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com \
+  --allow-unauthenticated
 ```
 
-リポジトリを作成するか聞かれた場合は、そのまま `Enter` を押し作成するようにしてください。
-
-**注**: デプロイ完了まで最大 10 分程度かかります。
+**注**: デプロイ完了まで最大 5 分程度かかります。
 
 ## **アプリケーションの試用**
 
@@ -408,12 +435,20 @@ git switch darkmode
 ### **2. ダークモードの限定リリース**
 
 ```bash
-gcloud run deploy streamchat --source src/streamchat --allow-unauthenticated --no-traffic --tag darkmode --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com
+gcloud builds submit ./src/streamchat \
+  --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
+  --machine-type e2-highcpu-8 && \
+gcloud run deploy streamchat \
+  --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
+  --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com \
+  --no-traffic \
+  --tag darkmode \
+  --allow-unauthenticated
 ```
 
 ### **3. 動作確認**
 
-前の手順で出力された URL をクリックし、ダークモードが正しく動いているかを確認します。
+前の手順で出力された URL (darkmode が 含まれている URL) をクリックし、ダークモードが正しく動いているかを確認します。
 
 **注**: 新しい URL になっているため、Google ログインは失敗します。E-mail、パスワード認証からチャットウィンドウに遷移し、ダークモードを確認してください。
 
@@ -454,7 +489,9 @@ gcloud pubsub topics create streamchat
 チャットアプリケーションに Pub/Sub トピックへのメッセージ送信権限を付与します。
 
 ```bash
-gcloud pubsub topics add-iam-policy-binding streamchat --member serviceAccount:streamchat@$PROJECT_ID.iam.gserviceaccount.com --role 'roles/pubsub.publisher'
+gcloud pubsub topics add-iam-policy-binding streamchat \
+  --member serviceAccount:streamchat@$PROJECT_ID.iam.gserviceaccount.com \
+  --role 'roles/pubsub.publisher'
 ```
 
 ## **禁止用語判定サービスのデプロイ**
@@ -468,13 +505,21 @@ gcloud iam service-accounts create banchecker
 ### **2. 放送禁止判定サービス用のサービスアカウントへの権限設定**
 
 ```bash
-gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:banchecker@$PROJECT_ID.iam.gserviceaccount.com --role 'roles/datastore.user'
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member serviceAccount:banchecker@$PROJECT_ID.iam.gserviceaccount.com \
+  --role 'roles/datastore.user'
 ```
 
 ### **3. 禁止用語判定サービスのデプロイ**
 
 ```bash
-gcloud run deploy banchecker --source ./src/banchecker --no-allow-unauthenticated --service-account banchecker@$PROJECT_ID.iam.gserviceaccount.com
+gcloud builds submit ./src/banchecker/ \
+  --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/banchecker \
+  --machine-type e2-highcpu-8 && \
+gcloud run deploy banchecker \
+  --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/banchecker \
+  --service-account banchecker@$PROJECT_ID.iam.gserviceaccount.com \
+  --no-allow-unauthenticated
 ```
 
 ## **Pub/Sub からの連携設定**
@@ -488,14 +533,19 @@ gcloud iam service-accounts create sub-to-banchecker
 ### **2. Pub/Sub 用のサービスアカウントへの権限設定**
 
 ```bash
-gcloud run services add-iam-policy-binding banchecker --member serviceAccount:sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com --role 'roles/run.invoker'
+gcloud run services add-iam-policy-binding banchecker \
+  --member serviceAccount:sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com \
+  --role 'roles/run.invoker'
 ```
 
 ### **3. Pub/Sub から判定サービスへのトリガー設定**
 
 ```bash
 CHECKER_URL=$(gcloud run services describe banchecker --format json | jq -r '.status.address.url')
-gcloud pubsub subscriptions create sub-to-banchecker --topic streamchat --push-endpoint $CHECKER_URL --push-auth-service-account sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com
+gcloud pubsub subscriptions create sub-to-banchecker \
+  --topic streamchat \
+  --push-endpoint $CHECKER_URL \
+  --push-auth-service-account sub-to-banchecker@$PROJECT_ID.iam.gserviceaccount.com
 ```
 
 ## **チャットアプリケーションの更新**
@@ -547,7 +597,13 @@ firebase deploy --only firestore:indexes -P $PROJECT_ID
 ### **4. 連携機能のデプロイ**
 
 ```bash
-gcloud run deploy streamchat --source ./src/streamchat --allow-unauthenticated --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com
+gcloud builds submit ./src/streamchat \
+  --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
+  --machine-type e2-highcpu-8 && \
+gcloud run deploy streamchat \
+  --image asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
+  --service-account streamchat@$PROJECT_ID.iam.gserviceaccount.com \
+  --allow-unauthenticated
 ```
 
 ## **放送禁止用語判定フィルタの動作確認**
@@ -570,17 +626,17 @@ gcloud run deploy streamchat --source ./src/streamchat --allow-unauthenticated -
 SELECT
   timestamp, severity, resource.type, log_name, text_payload, proto_payload, json_payload
 FROM
-  `[PROJECT_ID].asia-northeast1.run-analytics-bucket._AllLogs`
+  `test-project.asia-northeast1.run-analytics-bucket._AllLogs`
 LIMIT 50
 ```
 
-**注**: [PROJECT_ID] の部分はご自身の PROJECT_ID に置き換えてください。
+**注**: `test-project` の部分はご自身の PROJECT_ID に置き換えてください。
 
 うまくログが取れていた場合、いくつかのログがテーブル形式で表示されます。
 
 ### **3. 様々なクエリを試してみる**
 
-以下のクエリは前の手順と同様に [PROJECT_ID] は置き換えて実行します。
+以下のクエリは前の手順と同様に `test-project` は置き換えて実行します。
 
 1. リクエスト数が多い順に URL へのアクセス数を調べる
 
@@ -588,7 +644,7 @@ LIMIT 50
    SELECT
      http_request.request_url, COUNT(http_request.request_url)
    FROM
-     `[PROJECT_ID].asia-northeast1.run-analytics-bucket._AllLogs`
+     `test-project.asia-northeast1.run-analytics-bucket._AllLogs`
    WHERE
      http_request IS NOT NULL AND
      http_request.request_url IS NOT NULL
@@ -605,7 +661,7 @@ LIMIT 50
    SELECT
      text_payload
    FROM
-     `[PROJECT_ID].asia-northeast1.run-analytics-bucket._AllLogs`
+     `test-project.asia-northeast1.run-analytics-bucket._AllLogs`
    WHERE
      text_payload IS NOT NULL AND
      log_id != "run.googleapis.com/requests"
@@ -637,7 +693,7 @@ gcloud config unset project
 ### **2. プロジェクトの削除**
 
 ```bash
-gcloud projects delete ${PROJECT_ID}
+gcloud projects delete $PROJECT_ID
 ```
 
 ### **3. ハンズオン資材の削除**
