@@ -10,7 +10,7 @@ function update_env() {
     json_key=$1
     env_key=$2
     json_value=$(cat firebaseConfig.json | jq ".$json_key")
-    sed -i -e "s/$env_key=/$env_key=$json_value/g" $ENV_PATH/.env
+    sed -i -e "s/$env_key=$/$env_key=$json_value/g" $ENV_PATH/.env
 }
 
 update_env projectId NEXT_PUBLIC_FIREBASE_PROJECT_ID
