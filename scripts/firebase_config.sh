@@ -4,6 +4,10 @@ APP_ID=$(firebase -j apps:list -P $PROJECT_ID | jq '.result[] | select(.displayN
 TMP_FILE=firebaseConfig.json
 ENV_PATH=./src/streamchat
 
+if [ ! -z ${1} ]; then
+    ENV_PATH=$1
+fi
+
 firebase -j apps:sdkconfig -P $PROJECT_ID WEB $APP_ID | jq '.result.sdkConfig' > $TMP_FILE
 
 function update_env() {
@@ -21,6 +25,7 @@ update_env authDomain NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
 update_env messagingSenderId NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 
 echo "Updated configuration..."
+echo 
 cat $ENV_PATH/.env
 
 rm -rf $TMP_FILE
