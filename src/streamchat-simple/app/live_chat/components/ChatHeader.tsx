@@ -5,10 +5,16 @@ import firebaseClientApp from "../../libs/firebase/client";
 import { getAuth } from "firebase/auth";
 import { PiSignOut } from "react-icons/pi";
 import ThemeChanger from "./ThemeChanger";
+import { Dispatch, SetStateAction } from "react";
 
 const auth = getAuth(firebaseClientApp);
 
-const ChatHeader = () => {
+type ChatHeaderProps = {
+  allMessages: boolean;
+  setAllMessages: Dispatch<SetStateAction<boolean>>;
+};
+
+const ChatHeader = ({ allMessages, setAllMessages }: ChatHeaderProps) => {
   const [signOut] = useSignOut(auth);
   const handleClick = async () => {
     await signOut();
@@ -16,8 +22,13 @@ const ChatHeader = () => {
 
   return (
     <header className="h-[48px] p-2 flex-none bg-white dark:bg-black border-solid border-b border-gray-300 dark:border-gray-700 flex items-center">
-      <span className="text-md text-black dark:text-gray-200 px-4">
-        トップチャット
+      <span
+        onClick={() => {
+          setAllMessages(!allMessages);
+        }}
+        className="text-md text-black dark:text-gray-200 px-4 transition bg-white dark:bg-black hover:bg-slate-200 hover:dark:bg-gray-800 cursor-pointer"
+      >
+        {allMessages ? "チャット" : "トップチャット"}
       </span>
       <div className="flex-auto" />
       <ThemeChanger />
