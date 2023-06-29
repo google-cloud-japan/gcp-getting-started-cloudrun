@@ -169,10 +169,22 @@ gcloud logging sinks create run-analytics-sink \
 
 ### **1. Firebase プロジェクトの有効化**
 
-**GUI** から Firebase を有効化します。
+```bash
+firebase projects:addfirebase $PROJECT_ID
+```
+
+Firebase を初めて利用する場合は以下のようなエラーが出力され、コマンドが失敗してしまいます。
+
+```
+✖ Adding Firebase resources to Google Cloud Platform project
+
+Error: Failed to add Firebase to Google Cloud Platform project. See firebase-debug.log for more info.
+```
+
+この場合は以下の手順で GUI から Firebase を有効化します。
 
 1. [Firebase コンソール](https://console.firebase.google.com/) にブラウザからアクセスします。
-1. `プロジェクトを作成` または `プロジェクトを追加` ボタンをクリックします。
+1. `プロジェクトを作成` ボタンをクリックします。
 1. プロジェクトの作成 (手順 1/3)
 
    `プロジェクト名を入力` のところから作成済みの Google Cloud プロジェクトを選択します。次に 規約への同意、利用目的のチェックマークを入れ、`続行` をクリックします。
@@ -191,8 +203,6 @@ gcloud logging sinks create run-analytics-sink \
 
 ### **2. Firebase アプリケーションの作成**
 
-**CLI** から実行します。
-
 ```bash
 firebase apps:create -P $PROJECT_ID WEB streamchat
 ```
@@ -200,28 +210,8 @@ firebase apps:create -P $PROJECT_ID WEB streamchat
 ### **3. Firestore 設定のアプリケーションへの埋め込み**
 
 ```bash
-./scripts/firebase_config.sh ./src/streamchat-simple
+./scripts/firebase_config.sh
 ```
-
-## **Firebase Authentication の設定**
-
-**GUI** から Firebase Authentication を有効化します。
-
-スクリーンショットを見ながら進めたい方は、補足資料をご確認ください。
-
-1. 以下のコマンドで出力された URL にブラウザからアクセスします。
-
-   ```bash
-   echo "https://console.firebase.google.com/project/$PROJECT_ID/overview?hl=ja"
-   ```
-
-1. `Authentication` カードをクリックします。
-1. `始める` ボタンをクリックします。
-1. ネイティブのプロバイダから `メール / パスワード` をクリックします。
-1. `プロジェクトを作成` または `プロジェクトを追加` ボタンをクリックします。
-1. メール / パスワードの `有効にする` をクリックし、有効化します。
-1. `保存` ボタンをクリックします。
-1. メール / パスワードのプロバイダに有効のチェックが付いていることを確認します。
 
 ## **Firestore データベース、セキュリティルールの設定**
 
@@ -251,8 +241,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
-      allow read: if request.auth != null;
-      allow write: if false;
+      allow read, write;
     }
   }
 }
@@ -265,7 +254,104 @@ EOF
 firebase deploy --only firestore:rules -P $PROJECT_ID
 ```
 
-## **チャット アプリケーション用の事前設定**
+## **Cloud Run サービスの事前作成**
+
+以降の設定で CLoud Run サービスの URL が必要になるため、一旦ダミーでサービスをデプロイします。
+
+```bash
+gcloud run deploy streamchat \
+  --image us-docker.pkg.dev/cloudrun/container/hello \
+  --allow-unauthenticated
+```
+
+## **認証連携の設定 (OAuth 同意画面)**
+
+チャットアプリケーションでは E-mail, パスワード認証に加え、Google アカウント認証機能を持っています。そちらの機能を有効化するために、Google Cloud の設定から OAuth2 連携 の設定を行います。
+
+**注**: 本ステップの設定は主に GUI から行います。間違えないように注意して進めてください。
+
+### **1. OAuth 同意画面に遷移**
+
+<walkthrough-spotlight-pointer spotlightId="console-nav-menu">ナビゲーションメニュー</walkthrough-spotlight-pointer> -> API とサービス -> OAuth 同意画面 の順に進みます。
+
+### **2. OAuth 同意画面**
+
+1. `User Type` は `外部` にチェックを入れ、`作成` ボタンをクリックします。
+1. アプリ情報 -> アプリ名 に `streamchat` と入力します。
+
+   ```shell
+   streamchat
+   ```
+
+1. ユーザー サポートメール は選択式です。自分のメールアドレスを選択します。
+1. 最下部の デベロッパーの連絡先情報 に自分のメールアドレスを入力します。
+1. 下にある `保存して次へ` ボタンをクリックします。
+
+上記以外は未入力で大丈夫です。
+
+### **3. スコープ、省略可能な情報(or テストユーザー)、概要**
+
+スコープ、省略可能な情報(or テストユーザー) のページは何も入力せずに、下部にある `保存して次へ` ボタンをクリックします。
+
+概要ページでは最下部の `ダッシュボードに戻る` ボタンをクリックします。
+
+## **認証連携の設定 (認証情報)**
+
+### **1. 認証情報画面へ遷移**
+
+左のメニューから `認証情報` をクリックします。
+
+### **2. OAuth 2.0 クライアント ID を作成**
+
+1. 上のメニューにある `+ 認証情報を作成` をクリックし、`OAuth クライアント ID` をクリックします。
+1. `アプリケーションの種類` で `ウェブ アプリケーション` を選択します。
+1. `名前` を `streamchat` に置き換えます。
+
+   ```shell
+   streamchat
+   ```
+
+1. `承認済みの JavaScript 生成元` には以下のコマンドで出力された URL を追加します。
+
+   ```bash
+   CHAT_URL=$(gcloud run services describe streamchat --format json | jq -r '.status.address.url')
+   echo $CHAT_URL
+   ```
+
+1. `承認済みのリダイレクト URI` には以下のコマンドで出力された URL を追加します。
+
+   ```bash
+   echo $CHAT_URL/api/auth/callback/google
+   ```
+
+1. `作成` ボタンをクリックします。
+1. `OAuth クライアントを作成しました` というウィンドウが表示されるので、`クライアント シークレット` をコピーし、`OK` をクリックしてウィンドウを閉じます。
+
+### **3. OAuth 情報のアプリケーションへの埋め込み**
+
+以下のスクリプトにクライアントシークレット、クライアント ID の文字列を引数に与えて実行します。
+
+クライアントシークレットはコピー済みなので、ペーストします。クライアント ID は GUI 画面からコピーをしてペーストします。
+
+```bash
+./scripts/credentials.sh
+```
+
+**実行例** (前の短い引数がクライアント シークレット、後ろの長い方がクライアント ID です)
+
+```
+./scripts/credentials.sh xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 444444444444-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+```
+
+### **4. 認証ライブラリ設定情報の埋め込み**
+
+```bash
+./scripts/nextauth_config.sh
+```
+
+このコマンドで表示される設定ファイルのそれぞれの値に、すべて値が入っていることを確認します。
+
+## **チャット アプリケーションのデプロイ**
 
 Cloud Run では様々な方法でデプロイが可能です。ここでは以下の方法でアプリケーションをデプロイします。
 
@@ -288,30 +374,12 @@ gcloud artifacts repositories create chat-repo \
 gcloud iam service-accounts create streamchat
 ```
 
-### **3. サービスアカウントへの権限追加**
-
-チャットアプリケーションは認証情報の操作、Firestore の読み書き権限が必要です。先程作成したサービスアカウントに権限を付与します。
-
-```bash
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:streamchat@$PROJECT_ID.iam.gserviceaccount.com \
-  --role 'roles/firebase.sdkAdminServiceAgent'
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:streamchat@$PROJECT_ID.iam.gserviceaccount.com \
-  --role 'roles/firebaseauth.admin'
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member serviceAccount:streamchat@$PROJECT_ID.iam.gserviceaccount.com \
-  --role 'roles/iam.serviceAccountTokenCreator'
-```
-
-## **アプリケーションのデプロイ、試用**
-
-### **1. チャット アプリケーションのデプロイ**
+### **3. チャット アプリケーションのデプロイ**
 
 Cloud Build でコンテナイメージを作成、作成したイメージを Cloud Run にデプロイします。
 
 ```bash
-gcloud builds submit ./src/streamchat-simple \
+gcloud builds submit ./src/streamchat \
   --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
   --machine-type e2-highcpu-8 && \
 gcloud run deploy streamchat \
@@ -320,20 +388,31 @@ gcloud run deploy streamchat \
   --allow-unauthenticated
 ```
 
-**注**: デプロイ完了まで 5 分程度かかります。
+**注**: デプロイ完了まで最大 5 分程度かかります。
 
-### **2. アプリケーションへブラウザからアクセス**
+## **アプリケーションの試用**
 
-前のコマンドで出力された `Service URL` から URL をクリックすると、ブラウザのタブが開きチャットアプリケーションが起動します。
+### **1. アプリケーションへブラウザからアクセス**
 
-### **3. 新規ユーザーの登録**
+以下のコマンドで出力された URL をクリックすると、ブラウザのタブが開きチャットアプリケーションが起動します。
 
-最下部の `アカウントを登録する` をクリックし、ユーザー情報を入力、`登録 / Register` をクリックします。
+```bash
+CHAT_URL=$(gcloud run services describe streamchat --format json | jq -r '.status.address.url')
+echo $CHAT_URL
+```
+
+### **2. 新規ユーザーでログイン**
+
+最下部の `Create an account` をクリックし、ユーザー情報を入力、`Register` をクリックします。
 
 うまく登録ができると、チャット画面に遷移します。
 
 - 最下部のウィンドウからメッセージを入力できます。
-- 右上の `サインアウト` ボタンからサインアウトが可能です。
+- 右上の `Sign out` ボタンからサインアウトが可能です。
+
+### **3. Google アカウントでログイン**
+
+ログイン画面の G マークのボタンをクリックすると、Google アカウントを使ったログインができます。
 
 ### **4. リアルタイムチャットを確認**
 
@@ -356,7 +435,7 @@ git switch darkmode
 ### **2. ダークモードの限定リリース**
 
 ```bash
-gcloud builds submit ./src/streamchat-simple \
+gcloud builds submit ./src/streamchat \
   --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
   --machine-type e2-highcpu-8 && \
 gcloud run deploy streamchat \
@@ -370,6 +449,8 @@ gcloud run deploy streamchat \
 ### **3. 動作確認**
 
 前の手順で出力された URL (darkmode が 含まれている URL) をクリックし、ダークモードが正しく動いているかを確認します。
+
+**注**: 新しい URL になっているため、Google ログインは失敗します。E-mail、パスワード認証からチャットウィンドウに遷移し、ダークモードを確認してください。
 
 また元々アクセスしていた URL には影響が無いことも合わせて確認しておきましょう。
 
@@ -432,7 +513,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ### **3. 禁止用語判定サービスのデプロイ**
 
 ```bash
-gcloud builds submit ./src/banchecker-simple \
+gcloud builds submit ./src/banchecker/ \
   --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/banchecker \
   --machine-type e2-highcpu-8 && \
 gcloud run deploy banchecker \
@@ -516,7 +597,7 @@ firebase deploy --only firestore:indexes -P $PROJECT_ID
 ### **4. 連携機能のデプロイ**
 
 ```bash
-gcloud builds submit ./src/streamchat-simple \
+gcloud builds submit ./src/streamchat \
   --tag asia-northeast1-docker.pkg.dev/$PROJECT_ID/chat-repo/streamchat \
   --machine-type e2-highcpu-8 && \
 gcloud run deploy streamchat \
