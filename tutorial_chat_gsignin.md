@@ -100,7 +100,7 @@ cd ~/gcp-getting-started-cloudrun
 ### **2. チュートリアルを開く**
 
 ```bash
-teachme tutorial_chat.md
+teachme tutorial_chat_gsignin.md
 ```
 
 ### **3. プロジェクト ID を設定する**
