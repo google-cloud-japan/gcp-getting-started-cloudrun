@@ -14,20 +14,10 @@
 
 ## Google Cloud プロジェクトの設定、確認
 
-### **1. 対象の Google Cloud プロジェクトを設定**
-
-ハンズオンを行う Google Cloud プロジェクトのプロジェクト ID を環境変数に設定し、以降の手順で利用できるようにします。 (右辺の [PROJECT_ID] を手動で置き換えてコマンドを実行します)
+### **プロジェクトの課金が有効化されていることを確認する**
 
 ```bash
-export PROJECT_ID=[PROJECT_ID]
-```
-
-`プロジェクト ID` は [ダッシュボード](https://console.cloud.google.com/home/dashboard) に進み、左上の **プロジェクト情報** から確認します。
-
-### **2. プロジェクトの課金が有効化されていることを確認する**
-
-```bash
-gcloud beta billing projects describe ${PROJECT_ID} | grep billingEnabled
+gcloud beta billing projects describe ${GOOGLE_CLOUD_PROJECT} | grep billingEnabled
 ```
 
 **Cloud Shell の承認** という確認メッセージが出た場合は **承認** をクリックします。
@@ -61,17 +51,7 @@ gcloud コマンドライン インターフェースは、Google Cloud でメ�
 
 **ヒント**: gcloud コマンドラインツールについての詳細は[こちら](https://cloud.google.com/sdk/gcloud?hl=ja)をご参照ください。
 
-### **2. gcloud から利用する Google Cloud のデフォルトプロジェクトを設定**
-
-gcloud コマンドでは操作の対象とするプロジェクトの設定が必要です。操作対象のプロジェクトを設定します。
-
-```bash
-gcloud config set project ${PROJECT_ID}
-```
-
-承認するかどうかを聞かれるメッセージがでた場合は、`承認` ボタンをクリックします。
-
-### **3. gcloud からの Cloud Run のデフォルト設定**
+### **2. gcloud からの Cloud Run のデフォルト設定**
 
 Cloud Run の利用するリージョン、プラットフォームのデフォルト値を設定します。
 
@@ -100,16 +80,9 @@ cd ~/gcp-getting-started-cloudrun
 teachme tutorial.md
 ```
 
-### **3. プロジェクト ID を設定する**
+### **3. gcloud のデフォルト設定**
 
 ```bash
-export PROJECT_ID=[PROJECT_ID]
-```
-
-### **4. gcloud のデフォルト設定**
-
-```bash
-gcloud config set project ${PROJECT_ID}
 gcloud config set run/region asia-northeast1
 gcloud config set run/platform managed
 ```
@@ -219,7 +192,7 @@ gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 ### **3. ローカル（Cloud Shell 上）にコンテナを作成**
 
 ```bash
-(cd src/sumservice && docker build -t asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloudrun-handson/sumservice:v1 .)
+(cd src/sumservice && docker build -t asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/cloudrun-handson/sumservice:v1 .)
 ```
 
 **ヒント**: カレントディレクトリを変えずに実行するために、カッコでくくっています。またコマンドの出力で赤字で `WARNING` が出力されますが、こちらは問題ありません。コンテナを作成するときに `Dockerfile` 内で `pip` コマンドを `root` ユーザで実行しているためです。コンテナの中で専用ユーザを作るなどで対応できますが、本質ではないので入れていません。
@@ -227,13 +200,13 @@ gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
 ### **4. 作成したコンテナをコンテナレジストリ（Artifact Registry）へ登録（プッシュ）する**
 
 ```bash
-docker push asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloudrun-handson/sumservice:v1
+docker push asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/cloudrun-handson/sumservice:v1
 ```
 
 ### **5. Cloud Run にデプロイ**
 
 ```bash
-gcloud run deploy sumservice --image=asia-northeast1-docker.pkg.dev/${PROJECT_ID}/cloudrun-handson/sumservice:v1 --allow-unauthenticated
+gcloud run deploy sumservice --image=asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/cloudrun-handson/sumservice:v1 --allow-unauthenticated
 ```
 
 ### **6. 動作確認**
@@ -481,7 +454,7 @@ CSR を Git のリモートレポジトリとして登録します。
 これで git コマンドを使い Cloud Shell 上にあるファイル群を管理することができます。
 
 ```bash
-git remote add google https://source.developers.google.com/p/${PROJECT_ID}/r/cloudrun-handson
+git remote add google https://source.developers.google.com/p/${GOOGLE_CLOUD_PROJECT}/r/cloudrun-handson
 ```
 
 ### **3. CSR への資材の転送（プッシュ）**
@@ -499,6 +472,10 @@ git add . && git commit -m "Fix a message for sumservice" && git push google mai
 
 Cloud Run の CI / CD 設定は GUI から行います。
 
+注: **CI / CD で作成する Cloud Run は今まで利用してきた東京リージョンではなく、台湾リージョンに作成します。これは Cloud Run の CI/CD 設定から利用する Cloud Build の Quota により、東京リージョンでは Build を走らせることができないため台湾を利用しています。詳しくは以下のリンクを確認してください。**
+
+[一部のプロジェクトで制限されているリージョン](https://cloud.google.com/build/docs/locations#restricted_regions_for_some_projects)
+
 ### **1. Cloud Run GUI に移動**
 
 下記のように GUI を操作し Cloud Run の管理画面を開きます。
@@ -513,7 +490,7 @@ Cloud Run の CI / CD 設定は GUI から行います。
 
 1. `ソース リポジトリから新しいリビジョンを継続的にデプロイする` をチェックします
 1. サービス名に `sumservice` と入力します
-1. リージョンは `asia-northeast1 (東京)` を選択します
+1. リージョンは `asia-east1 (台湾)` を選択します
 1. `CLOUD BUILD の設定` ボタンをクリックします
 
 ### **4. Cloud Build の設定** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_source_repository.png?raw=true) [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/configure_build.png?raw=true)
@@ -560,8 +537,8 @@ git add . && git commit -m "Update the message to test CI/CD deployment" && git 
 ### **3. ビルド完了まで待機**
 
 ```bash
-BUILD_ID=$(gcloud beta builds list --sort-by ~createTime --limit 1 --format json | jq -r '.[].id')
-while true; do gcloud beta builds describe $BUILD_ID --format json | jq -r '.status' | grep SUCCESS && echo 'Build finised :-)' && break; echo 'Waiting to finish the build...'; sleep 5; done
+BUILD_ID=$(gcloud beta builds list --sort-by ~createTime --limit 1 --format json --region asia-east1 | jq -r '.[].id')
+while true; do gcloud beta builds describe $BUILD_ID --format json --region asia-east1 | jq -r '.status' | grep SUCCESS && echo 'Build finised :-)' && break; echo 'Waiting to finish the build...'; sleep 5; done
 ```
 
 ### **4. 動作確認** [![screenshot](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/link_image.png?raw=true)](https://github.com/google-cloud-japan/gcp-getting-started-cloudrun/blob/main/images/confirm_cicd_pipeline.png?raw=true)
@@ -569,6 +546,14 @@ while true; do gcloud beta builds describe $BUILD_ID --format json | jq -r '.sta
 Cloud Run の GUI に表示されている URL のリンクをクリックし、`Hello Challenger01!` と表示されていれば成功です。
 
 **ヒント**: GUI から新しいリビジョンがデプロイ完了したことを確認した後に、アクセスしてください。
+
+### **5. 台湾リージョンで稼働している sumservice の削除**
+
+ここでは CI / CD (Cloud Build) の都合により台湾リージョンで sumservice を動かしていましたが、次からまた東京リージョンで動かすため、今稼働中のアプリケーションを削除します。
+
+```bash
+gcloud run services delete sumservice --region asia-east1 --quiet
+```
 
 <walkthrough-footnote>作成したパイプラインがちゃんと動いていることが確認できました。ビルドの確認に手間がかかるため、以降はパイプラインを利用せず gcloud コマンドで Cloud Run サービスを操作します。</walkthrough-footnote>
 
@@ -797,7 +782,7 @@ currencyservice は他サービスからのみ呼び出される想定ですが�
 sumservice から currencyservice を呼び出せるように sumservice のサービスアカウントに権限を付与します。
 
 ```bash
-gcloud run services add-iam-policy-binding currencyservice --member="serviceAccount:sumservice-sa@${PROJECT_ID}.iam.gserviceaccount.com" --role='roles/run.invoker'
+gcloud run services add-iam-policy-binding currencyservice --member="serviceAccount:sumservice-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com" --role='roles/run.invoker'
 ```
 
 ### **2. sumservice の修正、デプロイ**
@@ -1009,7 +994,7 @@ bash scripts/setup_loadbalancer.sh
 ### **1. currencyservice のデプロイ**
 
 ```bash
-gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud run deploy currencyservice --source src/currencyservice/ --no-allow-unauthenticated --region us-central1 --service-account currencyservice-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
 ```
 
 us-central1 リージョンでソースからの初めてのデプロイのため、Artifact Registry を作成するか聞かれます。`Enter` を押して先に進みます。
@@ -1017,13 +1002,13 @@ us-central1 リージョンでソースからの初めてのデプロイのた�
 ### **2. sumservice からのアクセス許可設定**
 
 ```bash
-gcloud run services add-iam-policy-binding currencyservice --member="serviceAccount:sumservice-sa@${PROJECT_ID}.iam.gserviceaccount.com" --role='roles/run.invoker' --region us-central1
+gcloud run services add-iam-policy-binding currencyservice --member="serviceAccount:sumservice-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com" --role='roles/run.invoker' --region us-central1
 ```
 
 ### **3. sumservice のデプロイ**
 
 ```bash
-gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud run deploy sumservice --source src/sumservice/ --allow-unauthenticated --region us-central1 --service-account sumservice-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
 ```
 
 ### **4. sumservice へ currencyservice の URL を設定**
@@ -1154,19 +1139,13 @@ curl -s -k -H "Content-Type: application/json" -d '{ "amounts": ["USD10", "EUR20
 
 ハンズオン用に利用したプロジェクトを削除し、コストがかからないようにします。
 
-### **1. Google Cloud のデフォルトプロジェクト設定の削除**
+### **1. プロジェクトの削除**
 
 ```bash
-gcloud config unset project
+gcloud projects delete ${GOOGLE_CLOUD_PROJECT}
 ```
 
-### **2. プロジェクトの削除**
-
-```bash
-gcloud projects delete ${PROJECT_ID}
-```
-
-### **3. ハンズオン資材の削除**
+### **2. ハンズオン資材の削除**
 
 ```bash
 cd $HOME && rm -rf gcp-getting-started-cloudrun gopath
