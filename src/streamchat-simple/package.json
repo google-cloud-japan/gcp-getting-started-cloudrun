@@ -33,7 +33,7 @@
     "react-spinners": "0.13.8",
     "request": "2.88.2",
     "retry-request": "5.0.2",
-    "sharp": "0.32.1",
+    "sharp": "0.32.6",
     "tailwindcss": "3.3.2",
     "typescript": "5.1.3"
   }
