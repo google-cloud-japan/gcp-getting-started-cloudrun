@@ -29,7 +29,7 @@
     "react-hook-form": "^7.44.1",
     "react-hot-toast": "^2.4.1",
     "react-icons": "^4.9.0",
-    "sharp": "^0.32.1",
+    "sharp": "^0.32.6",
     "tailwindcss": "3.3.2",
     "typescript": "5.0.4"
   },
