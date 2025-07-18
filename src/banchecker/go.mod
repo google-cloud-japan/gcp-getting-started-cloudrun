@@ -1,16 +1,15 @@
 module github.com/hasebe/cloudrun-handson/src/banchecker
 
-go 1.20
+go 1.23.0
 
 require (
 	cloud.google.com/go/firestore v1.10.0
-	golang.org/x/oauth2 v0.8.0
+	golang.org/x/oauth2 v0.27.0
 )
 
 require (
 	cloud.google.com/go v0.110.2 // indirect
-	cloud.google.com/go/compute v1.19.1 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/longrunning v0.4.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
